@@ -1035,15 +1035,15 @@ toolokx = OKX_FUNCTION(keypass= '')
 print(toolokx.real_buy_market_ETH(50, 0, "", False, 5))
 #print(toolokx.real_buy_market_in_Okx("ETH", "USDT", 10, 0, "", False, 5))
 #print(toolokx.real_sell_market_in_Okx("ETH", "USDT", 0.0137, 0, "", False, 5))
-print("Kq 1 ETH= ", toolokx.get_return_buy_Okx(symbol= 'AVAX', usd= 'ETH', amountin = 2, proxy="", fake_ip=False))
+# print("Kq 1 ETH= ", toolokx.get_return_buy_Okx(symbol= 'AVAX', usd= 'ETH', amountin = 2, proxy="", fake_ip=False))
 
-print("Kq 2 ETH= ", toolokx.get_return_buy_Okx_withETH(symbol="AVAX", usd="USDT", amountin= 2, proxy="", fake_ip=False))
+# print("Kq 2 ETH= ", toolokx.get_return_buy_Okx_withETH(symbol="AVAX", usd="USDT", amountin= 2, proxy="", fake_ip=False))
 
-print("Kq 11 ETH= ", toolokx.get_return_sell_Okx(symbol= 'AVAX', usd= 'ETH', amountin = 200, proxy="", fake_ip=False))
+# print("Kq 11 ETH= ", toolokx.get_return_sell_Okx(symbol= 'AVAX', usd= 'ETH', amountin = 200, proxy="", fake_ip=False))
 
-print("Kq 21 ETH= ", toolokx.get_return_sell_Okx_withETH(symbol="AVAX", usd="USDT", amountin= 200, proxy="", fake_ip=False))
+# print("Kq 21 ETH= ", toolokx.get_return_sell_Okx_withETH(symbol="AVAX", usd="USDT", amountin= 200, proxy="", fake_ip=False))
 
-print("okxxx 1 ", toolokx.get_best_return_buy_Okx_withETH( symbol='OKB', amountin= 2, proxy="", fake_ip= False))
-print("okxxx 2 ", toolokx.get_best_return_sell_Okx_withETH( symbol='OKB', amountin= 69.57584785849045, proxy="", fake_ip= False))
+# print("okxxx 1 ", toolokx.get_best_return_buy_Okx_withETH( symbol='OKB', amountin= 2, proxy="", fake_ip= False))
+# print("okxxx 2 ", toolokx.get_best_return_sell_Okx_withETH( symbol='OKB', amountin= 69.57584785849045, proxy="", fake_ip= False))
 #print(toolokx.real_buy_in_Okx("POLYDOGE", "USDT", 20, 0, "proxy", False, 5))
 #print(toolokx.real_sell_in_Okx("POLYDOGE", "USDT", 1136518771, 0, "proxy", False, 5))

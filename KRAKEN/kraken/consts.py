@@ -1,17 +1,15 @@
 # http header
-API_URL = 'https://www.okx.com'
+API_URL = 'https://api.kraken.com'
 
 CONTENT_TYPE = 'Content-Type'
-OK_ACCESS_KEY = 'OK-ACCESS-KEY'
-OK_ACCESS_SIGN = 'OK-ACCESS-SIGN'
-OK_ACCESS_TIMESTAMP = 'OK-ACCESS-TIMESTAMP'
-OK_ACCESS_PASSPHRASE = 'OK-ACCESS-PASSPHRASE'
+ACCESS_KEY = 'API-Key'
+ACCESS_SIGN = 'API-Sign'
 
 ACEEPT = 'Accept'
 COOKIE = 'Cookie'
 LOCALE = 'Locale='
 
-APPLICATION_JSON = 'application/json'
+APPLICATION_JSON = 'application/x-www-form-urlencoded; charset=utf-8'
 
 GET = "GET"
 POST = "POST"
@@ -80,7 +78,7 @@ INTEREST_RATE_LOAN_QUATA = '/api/v5/public/interest-rate-loan-quota'
 VIP_INTEREST_RATE_LOAN_QUATA = '/api/v5/public/vip-interest-rate-loan-quota'
 
 # TRADE
-PLACR_ORDER = '/api/v5/trade/order'
+PLACE_ORDER = '/0/private/AddOrder'
 BATCH_ORDERS = '/api/v5/trade/batch-orders'
 CANAEL_ORDER = '/api/v5/trade/cancel-order'
 CANAEL_BATCH_ORDERS = '/api/v5/trade/cancel-batch-orders'

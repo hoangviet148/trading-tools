@@ -1,19 +1,22 @@
 import requests
 import json
+import time
 from . import consts as c, utils, exceptions
-
+import hashlib
+import hmac
+import base64
+import urllib.parse
 
 class Client(object):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
+    def __init__(self, api_key, api_secret_key):
 
         self.API_KEY = api_key
         self.API_SECRET_KEY = api_secret_key
-        self.PASSPHRASE = passphrase
-        self.use_server_time = use_server_time
-        self.flag = flag
 
     def _request(self, method, request_path, params):
+
+        print(f"request_path {request_path}")
 
         if method == c.GET:
             request_path = request_path + utils.parse_params_to_str(params)
@@ -23,31 +26,41 @@ class Client(object):
         timestamp = utils.get_timestamp()
 
         # sign & header
-        if self.use_server_time:
-            timestamp = self._get_timestamp()
-
         body = json.dumps(params) if method == c.POST else ""
 
-        sign = utils.sign(utils.pre_hash(timestamp, method, request_path, str(body)), self.API_SECRET_KEY)
-        header = utils.get_header(self.API_KEY, sign, timestamp, self.PASSPHRASE, self.flag)
+        # Generate signature
+        postdata = urllib.parse.urlencode(params)
+        encoded = (str(params['nonce']) + postdata).encode()
+        message = request_path.encode() + hashlib.sha256(encoded).digest()
+
+        mac = hmac.new(base64.b64decode(self.API_SECRET_KEY), message, hashlib.sha512)
+        sigdigest = base64.b64encode(mac.digest())
+        signature = sigdigest.decode()
+       
+        header = utils.get_header(self.API_KEY, signature)
 
         # send request
         response = None
 
-        #print("url:", url)
-        # print("headers:", header)
-        # print("body:", body)
+        print("url:", url)
+        print("headers:", header)
+        print("body:", body, type(body))
 
         if method == c.GET:
             response = requests.get(url, headers=header)
         elif method == c.POST:
-            response = requests.post(url, data=body, headers=header)
+            try:
+                response = requests.post(url, headers=header, data=params)
+                print(f"response === {response.json()} - {response.status_code}")
+            except Exception as e:
+                print(f"Exception {e}")
+                exit
 
         # exception handle
         # print(response.headers)
 
         if not str(response.status_code).startswith('2'):
-            raise exceptions.OkexAPIException(response)
+            raise exceptions.krakenAPIException(response)
 
         return response.json()
 

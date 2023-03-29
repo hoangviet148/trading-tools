@@ -1,7 +1,7 @@
 # coding=utf-8
 
 
-class OkexAPIException(Exception):
+class krakenAPIException(Exception):
 
     def __init__(self, response):
         print(response.text + ', ' + str(response.status_code))
@@ -9,7 +9,7 @@ class OkexAPIException(Exception):
         try:
             json_res = response.json()
         except ValueError:
-            self.message = 'Invalid JSON error message from Okex: {}'.format(response.text)
+            self.message = 'Invalid JSON error message from kraken: {}'.format(response.text)
         else:
             if "code" in json_res.keys() and "msg" in json_res.keys():
                 self.code = json_res['code']
@@ -32,7 +32,7 @@ class OkexRequestException(Exception):
         self.message = message
 
     def __str__(self):
-        return 'OkexRequestException: %s' % self.message
+        return 'krakenParamsException: %s' % self.message
 
 
 class OkexParamsException(Exception):
@@ -41,4 +41,4 @@ class OkexParamsException(Exception):
         self.message = message
 
     def __str__(self):
-        return 'OkexParamsException: %s' % self.message
+        return 'krakenParamsException: %s' % self.message

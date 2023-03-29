@@ -1,18 +1,25 @@
 from .client import Client
 from .consts import *
+import time
 
 
 class TradeAPI(Client):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
-        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+    def __init__(self, api_key, api_secret_key):
+        Client.__init__(self, api_key, api_secret_key)
 
     # Place Order
-    def place_order(self, instId, tdMode, side, ordType, sz, ccy=None, clOrdId=None, tag=None, posSide=None, px=None,
-                    reduceOnly=None, tgtCcy=None):
-        params = {'instId': instId, 'tdMode': tdMode, 'side': side, 'ordType': ordType, 'sz': sz, 'ccy': ccy,
-                  'clOrdId': clOrdId, 'tag': tag, 'posSide': posSide, 'px': px, 'reduceOnly': reduceOnly, 'tgtCcy': tgtCcy}
-        return self._request_with_params(POST, PLACR_ORDER, params)
+    def place_order(self, nonce=None, ordertype=None, pair=None, price=None, type_=None, volume=None):
+        params = {
+            "nonce": nonce,
+            "ordertype": ordertype,
+            "pair": pair,
+            "price": str(price),
+            "type": type_,
+            "volume": str(volume)
+        }
+
+        return self._request_with_params(POST, PLACE_ORDER, params)
 
     # Place Multiple Orders
     def place_multiple_orders(self, orders_data):
@@ -40,7 +47,8 @@ class TradeAPI(Client):
 
     # Close Positions
     def close_positions(self, instId, mgnMode, posSide=None, ccy=None):
-        params = {'instId': instId, 'mgnMode': mgnMode, 'posSide': posSide, 'ccy': ccy}
+        params = {'instId': instId, 'mgnMode': mgnMode,
+                  'posSide': posSide, 'ccy': ccy}
         return self._request_with_params(POST, CLOSE_POSITION, params)
 
     # Get Order Details

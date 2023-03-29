@@ -4,8 +4,8 @@ from .consts import *
 
 class AccountAPI(Client):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='0'):
-        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+    def __init__(self, api_key, api_secret_key):
+        Client.__init__(self, api_key, api_secret_key)
 
     # Get Positions
     def get_position_risk(self, instType=None):
