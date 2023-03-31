@@ -47,52 +47,55 @@ class KRAKEN_FUNCTION:
                 self.api_key, self.api_secret)
             print("Init Done")
 
-    def get_decimal_token_cefi(self,number):  # Tìm xem 1 số có bao nhiêu số sau dấu phẩy
+    # Tìm xem 1 số có bao nhiêu số sau dấu phẩy
+    def get_decimal_token_cefi(self, number):
         string_number = str(number)
         if "." in string_number:
             decimal_places = len(string_number) - string_number.index('.') - 1
-            #print(decimal_places)
+            # print(decimal_places)
         else:
-            decimal_places=0
-            #print(decimal_places)
+            decimal_places = 0
+            # print(decimal_places)
         return decimal_places
 
-    def convert_number_to_smaller(self, number):   # Chuyển 1 số thành dạng tối đa có 3 số sau dấu phẩy
+    # Chuyển 1 số thành dạng tối đa có 3 số sau dấu phẩy
+    def convert_number_to_smaller(self, number):
         decimal_places = self.get_decimal_token_cefi(number)
         if decimal_places == 0:
             return number
         if decimal_places > 3:
             decimal_places = 3
-        number = int(float(number)*(10**int(decimal_places)))/(10**int(decimal_places))
+        number = int(float(number)*(10**int(decimal_places))) / \
+            (10**int(decimal_places))
         return number
 
     def get_balances_kraken(self, symbol):  # Check số dư của 1 token trên sàn
-        token=symbol.upper()
+        token = symbol.upper()
         while True:
             try:
-                res= self.FundingAPI.get_balances(token) 
+                res = self.FundingAPI.get_balances(token)
                 #print("res", res)
-                balance_funding=res['data'][0]['availBal']
+                balance_funding = res['data'][0]['availBal']
                 break
             except:
                 time.sleep(1)
                 continue
         while True:
             try:
-                res1=self.AccountAPI.get_account(token)
+                res1 = self.AccountAPI.get_account(token)
                 #print("res1", res1)
-                balance_trading=res1['data'][0]['details']
+                balance_trading = res1['data'][0]['details']
                 break
             except:
                 time.sleep(1)
                 continue
 
-        if len(balance_trading) ==0:
-            balance_trading=0
+        if len(balance_trading) == 0:
+            balance_trading = 0
         else:
-            balance_trading= balance_trading[0]['availBal']
+            balance_trading = balance_trading[0]['availBal']
         #print("balance_trading ", balance_trading)
-        balance=float(balance_funding)+float(balance_trading)
+        balance = float(balance_funding)+float(balance_trading)
         return self.convert_number_to_smaller(float(balance)), self.convert_number_to_smaller(float(balance_funding)), self.convert_number_to_smaller(float(balance_trading))
 
     # Lấy danh sách các lệnh đang được đặt trên sàn
@@ -489,7 +492,8 @@ class KRAKEN_FUNCTION:
         if float(price_find) < price_start/(1+float(truotgiasan)/100):
             print("SOS " + str(price_find)+" " + str(price_start))
             return 10000000, 0
-        print("price OK kraken" + str(price_start) + "price_find " + (price_find))
+        print("price OK kraken" + str(price_start) +
+              "price_find " + (price_find))
 
         if float(total_volume) < float(amountin):
             return price_find, sum_value_bids * (100-0.1)/100
@@ -571,10 +575,207 @@ class KRAKEN_FUNCTION:
             time.sleep(1)
         return result
 
+    # Lấy địa chỉ nạp tiền lên kraken
+    def get_deposit_address_kraken(self, symbol, chain):
+        symbol = symbol.upper()
+        nonce = int(time.time() * 1000)
+        try:
+            res = self.FundingAPI.get_deposit_address(
+                nonce=nonce, asset=symbol, method=chain)
+            print(f"res: {res['result'][0]['address']}")
+            if len(res['error']) == 0:
+                return res['result'][0]['address']
+        except:
+            err = str(sys.exc_info())
+            print("err", err)
+            print("Kiểm tra lại Chain đi người đẹp!")
+            return 0, 0
+
+    # Lấy trạng thái khả dụng hay bị dừng nạp tiền của 1 token
+    def get_status_deposit_kraken(self, symbol, chain):
+        symbol = symbol.upper()
+        try:
+            res = self.FundingAPI.get_currency()
+            for data in res['result']:
+                if symbol in data:
+                    if res['result'][data]['status'] != 'enabled':
+                        print("Tạm dừng nạp tiền rồi ", symbol, chain)
+                        return 0, 0, 0
+                    else:
+                        add = self.get_deposit_address_kraken(
+                            symbol, chain)
+                        print("Đã lấy được địa chỉ nạp tiền!!!", symbol, chain)
+                        return add
+        except Exception as e:
+            print(f"lỗi request {e}")
+
+    # Lấy trạng thái khả dụng hay bị dừng rút tiền
+    def get_status_withdrawal_kraken(self, symbol, key, amount):
+        nonce = int(time.time() * 1000)
+        try:
+            res = self.FundingAPI.get_withdrawal_info(
+                nonce=nonce, asset=symbol, key=key, amount=amount)
+            print(f"res {res}")
+
+            if len(res['error']) == 0:
+                print("Mạng rút bình thường!!!")
+                limit = res['result']['limit']
+                fee = res['result']['fee']
+                return True, limit, fee
+            else:
+                print("Tạm dừng rút tiền rồi ", token, key)
+                return False, 0, 0, 0, 0, 0
+        except:
+            err = str(sys.exc_info())
+            print("Chain không khả dụng!!!" + err)
+            return "False1", 0, 0, 0, 0, 0
+
+    # Lấy lịch sử nạp tiền
+    def get_deposit_history_kraken(self, asset, method):
+        nonce = int(time.time() * 1000)
+        res = self.FundingAPI.get_deposit_history(nonce=nonce, asset=asset, method=method)
+        status = "Chưa thấy tín hiệu"
+        if len(res['error']) == 0:
+            if res['result']['status'] == 'Failure':
+                print(f"status Failure")
+                status = "Failure"
+            else:
+                print(f"status Success")
+                status = "Success"
+        else:
+            print(res['error'])
+        return status
+
+    def get_withdraw_history_kraken(self):  # Lấy lịch sử rút tiền
+        nonce = int(time.time() * 1000)
+        try:
+            res = self.FundingAPI.get_withdrawal_history(nonce=nonce)
+            for res_wd in res['result']:
+                if res_wd['status'] == 'canceled':
+                    status = "canceled" + str(symbol)
+                elif res_wd['status'] == 'Pending':
+                    status = "Pending" + str(symbol)
+        except:
+            print("Lỗi lấy data" + str(sys.exc_info()))
+            status = "Lỗi " + str(sys.exc_info())
+        return status
+
+    # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
+    def transfer_kraken(self, asset, amount, From, to):
+        nonce = int(time.time() * 1000)
+        try:
+            res = self.FundingAPI.funds_transfer(
+                nonce, asset, amount, From, to)
+            # break
+        except:
+            print("Lỗi transfer main to trading_kraken ", str(sys.exc_info()))
+            return "Lỗi transfer main to trading_kraken " + str(sys.exc_info())
+        if len(res['error']) == '0':
+            print("chuyển tiền thành công")
+            status = "chuyển tiền thành công"
+        else:
+            print("Lỗi chuyển tiền kraken " + str(res))
+            status = "Lỗi chuyển tiền kraken" + str(res)
+        return status
+
+    # Hàm rút tiền từ kraken về
+    def submit_token_withdrawal_kraken(self, symbol, size, address, chain):
+        token = symbol.upper()
+        if chain == "Polygon":
+            chainID = token+"-" + "Polygon"
+        elif chain == "OPT":
+            chainID = token+"-"+"Optimism"
+        elif chain == "BSC":
+            chainID = token+"-"+"BSC"
+        elif chain == "TRON":
+            chainID = token+"-"+"TRC20"
+        elif chain == "AVAX":
+            chainID = token+"-"+"Avalanche C-Chain"
+        elif chain == "ETH":
+            chainID = token+"-"+"ERC20"
+        elif chain == "FTM":
+            chainID = token+"-"+"Fantom"
+        elif chain == "ASTAR":
+            chainID = token+"-"+"Astar"
+        elif chain == "SOL":
+            chainID = token+"-"+"Solana"
+        elif chain == "MOON":
+            chainID = token+"-"+"Moonriver"
+        elif chain == "NEAR":
+            chainID = token+"-"+"NEAR"
+        elif chain == "KLAY":
+            chainID = token+"-"+"Klaytn"
+        elif chain == "OSMO":
+            chainID = token+"-"+"Cosmos"
+        elif chain == "JUNO":
+            chainID = token+"-"+"Cosmos"
+        elif chain == "ARB":
+            chainID = token+"-"+"Arbitrum one"
+        elif chain == "BEAM":
+            chainID = token+"-"+"Moonbeam"
+        elif chain == "METIS":
+            chainID = token+"-"+"Metis"
+        elif chain == "APT":
+            chainID = token+"-"+"Aptos"
+        elif chain == "OKT":
+            chainID = token+"-"+"OKC"
+            if "ETH" in symbol:
+                chainID = "ETHK"+"-"+"OKC"
+            elif "BTC" in symbol:
+                chainID = "BTCK"+"-"+"OKC"
+            elif "DAI" in symbol:
+                chainID = "DAIK"+"-"+"OKC"
+        else:
+            print("Chain không khả dụng!!!!")
+        print("chain", chainID)
+
+        balance, balance_funding, balance_trading = self.get_balances_kraken(
+            token)
+        tag, minfee, maxfee, minsize, maxsize, wdTickSz = self.get_status_withdrawal_kraken(
+            token, chain)
+        list_fee_ruttien = [
+            float(minfee)*1.1, (float(minfee)*1.1 + float(maxfee))/2, float(maxfee)]
+        if float(balance) > 0 and float(balance) >= float(size):
+            if float(balance_funding) < float(size):
+                amout1 = int(float(size)*10**3)/(10**3)
+                res1 = self.transfer_kraken(token, amout1, "18", "6")
+            for fee_rutien in list_fee_ruttien:
+                try:
+                    if int(wdTickSz) > 3:
+                        wdTickSz = 3
+                    print("wdTickSz ", wdTickSz)
+                    size = int((float(size)-fee_rutien)*10 **
+                               int(wdTickSz))/(10**int(wdTickSz))
+                    print("size ", size)
+                    res = self.FundingAPI.coin_withdraw(
+                        token, size,  "4", address, chainID, str(fee_rutien))
+                    print("submit_token_withdrawal_kraken ", res)
+                    if res['code'] == '0':
+
+                        withdrawal_ID = res['data'][0]['wdId']
+                        print("withdrawal_ID", withdrawal_ID)
+                        print("Đã rút tiền chờ tiền về tài khoản!")
+                        status = "Đã rút tiền chờ tiền về tài khoản!"
+                        return True, status, withdrawal_ID
+                    else:
+                        print("Rút tiền thất bại! " +
+                              str(res['msg']) + "fee =" + str(fee_rutien))
+                        status = res['msg']
+                        continue
+                except:
+                    err = str(sys.exc_info())
+                    print("Lỗi submit_token_withdrawal_kraken ", err)
+                    continue
+            return False, status, 0
+        else:
+            print("Không đủ tiền để rút rồi người đẹp!")
+            status = "Không đủ tiền rút rồi!!!"
+            return False, status, 0
+
 
 toolkraken = KRAKEN_FUNCTION(keypass='')
 
-# print(toolkraken.real_buy_market_ETH(10, 0, "", False, 5))
+# print(toolkraken.real_buy_market_ETH(0.5, 0, "", False, 5))
 # print(toolkraken.real_buy_market_in_kraken("ETH", "USDT", 10, 0, "", False, 5))
 
 # print(f'=== 1 ETH buy {toolkraken.get_return_buy_kraken(symbol="LTC", usd="ETH", amountin=1, proxy="", fake_ip=False)} LTC')
@@ -587,363 +788,15 @@ toolkraken = KRAKEN_FUNCTION(keypass='')
 # print(
 #     f'=== 1 LTC sell {toolkraken.get_best_return_sell_kraken_withETH(symbol="LTC", amountin=1, proxy="", fake_ip=False)}')
 
-print(toolkraken.real_sell_in_kraken("LTC",
-      "USDT", 1136518771, 0, "proxy", False, 5))
+# print(toolkraken.real_sell_in_kraken("LTC",
+#       "USDT", 1136518771, 0, "proxy", False, 5))
+# print(toolkraken.real_sell_market_in_kraken("LTC",
+#       "USDT", 1136518771, 0, "proxy", False, 5))
 
 
-def get_deposit_address_kraken(self, symbol, chain):  # Lấy địa chỉ nạp tiền lên kraken
-        token=symbol.upper()
-        if chain=="Polygon":
-            chainID=token+"-"+ "Polygon"
-        elif chain=="OPT":
-            chainID= token+"-"+"Optimism"
-        elif chain=="BSC":
-            chainID=token+"-"+"BSC"
-        elif chain=="TRON":
-            chainID=token+"-"+"TRC20"               
-        elif chain=="AVAX":
-            chainID= token+"-"+"Avalanche C-Chain"  
-        elif chain=="ETH":
-            chainID=token+"-"+"ERC20" 
-        elif chain=="FTM":
-            chainID=token+"-"+"Fantom" 
-        elif chain=="ASTAR":
-            chainID=token+"-"+"Astar"         
-        elif chain=="SOL":
-            chainID=token+"-"+"Solana"
-        elif chain=="MOON":
-            chainID=token+"-"+"Moonriver"   
-        elif chain=="NEAR":
-            chainID=token+"-"+"NEAR"  
-        elif chain=="KLAY":
-            chainID=token+"-"+"Klaytn" 
-        elif chain=="OSMO":
-            chainID=token+"-"+"Cosmos"
-        elif chain=="JUNO":
-            chainID=token+"-"+"Cosmos"    
-        elif chain=="ARB":
-            chainID=token+"-"+"Arbitrum one"   
-        elif chain=="BEAM":
-            chainID=token+"-"+"Moonbeam"
-        elif chain=="METIS":
-            chainID=token+"-"+"Metis"
-        elif chain=="APT":
-            chainID=token+"-"+"Aptos"    
-        elif chain=="OKT":
-            chainID=token+"-"+"OKC" 
-            if "ETH" in symbol:
-               chainID="ETHK"+"-"+"OKC"  
-            elif "BTC" in symbol:
-               chainID="BTCK"+"-"+"OKC" 
-            elif "DAI" in symbol:
-               chainID="DAIK"+"-"+"OKC"                                             
-        else:
-            print("Chain không khả dụng!!!!") 
+# print(toolkraken.get_deposit_address_kraken("XBT", "Bitcoin"))
+# print(toolkraken.get_status_deposit_kraken("XBT", "Bitcoin"))
+# print(toolkraken.get_status_withdrawal_kraken("USDT", "usdt-wd", 2))
+# print(toolkraken.get_deposit_history_kraken("USDT", "Tether USD (TRC20)"))
+# print(toolkraken.transfer_kraken("USDT", "1", "Spot Wallet", "Futures Wallet"))
 
-        try:
-            res=  self.FundingAPI.get_deposit_address(token)
-            for dat in res['data']:
-                if dat['selected'] == True and chainID in dat['chain']:
-                    add=dat['addr']
-                    tag=dat['ctAddr']
-                    return add, tag
-
-        except:
-            err = str(sys.exc_info())
-            print("err", err)
-            print("Kiểm tra lại Chain đi người đẹp!")
-            return 0,0
-
-def get_status_deposit_kraken(self, symbol, chain):  #Lấy trạng thái khả dụng hay bị dừng nạp tiền của 1 token
-    token=symbol.upper()
-    if chain=="Polygon":
-        chainID=token+"-"+ "Polygon"
-    elif chain=="OPT":
-        chainID= token+"-"+"Optimism"
-    elif chain=="BSC":
-        chainID=token+"-"+"BSC"
-    elif chain=="TRON":
-        chainID=token+"-"+"TRC20"               
-    elif chain=="AVAX":
-        chainID= token+"-"+"Avalanche C-Chain"  
-    elif chain=="ETH":
-        chainID=token+"-"+"ERC20" 
-    elif chain=="FTM":
-        chainID=token+"-"+"Fantom" 
-    elif chain=="ASTAR":
-        chainID=token+"-"+"Astar"         
-    elif chain=="SOL":
-        chainID=token+"-"+"Solana"
-    elif chain=="MOON":
-        chainID=token+"-"+"Moonriver"   
-    elif chain=="NEAR":
-        chainID=token+"-"+"NEAR"  
-    elif chain=="KLAY":
-        chainID=token+"-"+"Klaytn" 
-    elif chain=="OSMO":
-        chainID=token+"-"+"Cosmos" 
-    elif chain=="JUNO":
-        chainID=token+"-"+"Cosmos"   
-    elif chain=="ARB":
-        chainID=token+"-"+"Arbitrum one"
-    elif chain=="METIS":
-        chainID=token+"-"+"Metis"
-    elif chain=="APT":
-        chainID=token+"-"+"Aptos"                 
-    elif chain=="BEAM":
-        chainID=token+"-"+"Moonbeam"   
-    elif chain=="OKT":
-        chainID=token+"-"+"OKC" 
-        if "ETH" in symbol:
-            chainID="ETHK"+"-"+"OKC"  
-        elif "BTC" in symbol:
-            chainID="BTCK"+"-"+"OKC" 
-        elif "DAI" in symbol:
-            chainID="DAIK"+"-"+"OKC"                              
-    else:
-        print("Chain không khả dụng!!!!") 
-    print("chain", chainID)
-    try:
-        res = self.FundingAPI.get_currency()
-        for data in result:
-            if  token in data['ccy'] and chainID in data['chain']:
-                if data['canDep'] == False:
-                    print("Tạm dừng nạp tiền rồi ", token, chain)
-                    return 0,0,0
-                else:
-                    mindeposit=data['minDep']
-                    add, tag= self.get_deposit_address_kraken(token, chain)
-                    print("Đã lấy được địa chỉ nạp tiền!!!", token, chain) 
-                    return add, tag, mindeposit
-    except:
-        print("lỗi request")
-        return "Lỗi", "Lỗi", "Lỗi"
-
-def get_status_withdrawal_kraken(self, symbol, chain): # Lấy trạng thái khả dụng hay bị dừng rút tiền
-    token=symbol.upper()
-    if chain=="Polygon":
-        chainID=token+"-"+ "Polygon"
-    elif chain=="OPT":
-        chainID= token+"-"+"Optimism"
-    elif chain=="BSC":
-        chainID=token+"-"+"BSC"
-    elif chain=="TRON":
-        chainID=token+"-"+"TRC20"               
-    elif chain=="AVAX":
-        chainID= token+"-"+"Avalanche C-Chain"  
-    elif chain=="ETH":
-        chainID=token+"-"+"ERC20" 
-    elif chain=="FTM":
-        chainID=token+"-"+"Fantom" 
-    elif chain=="ASTAR":
-        chainID=token+"-"+"Astar"         
-    elif chain=="SOL":
-        chainID=token+"-"+"Solana"
-    elif chain=="MOON":
-        chainID=token+"-"+"Moonriver"   
-    elif chain=="NEAR":
-        chainID=token+"-"+"NEAR"  
-    elif chain=="KLAY":
-        chainID=token+"-"+"Klaytn" 
-    elif chain=="OSMO":
-        chainID=token+"-"+"Cosmos"
-    elif chain=="JUNO":
-        chainID=token+"-"+"Cosmos"    
-    elif chain=="ARB":
-        chainID=token+"-"+"Arbitrum one"   
-    elif chain=="BEAM":
-        chainID=token+"-"+"Moonbeam" 
-    elif chain=="METIS":
-        chainID=token+"-"+"Metis"
-    elif chain=="APT":
-        chainID=token+"-"+"Aptos"   
-    elif chain=="OKT":
-        chainID=token+"-"+"OKC"
-        if "ETH" in symbol:
-            chainID="ETHK"+"-"+"OKC"  
-        elif "BTC" in symbol:
-            chainID="BTCK"+"-"+"OKC" 
-        elif "DAI" in symbol:
-            chainID="DAIK"+"-"+"OKC"                                
-    else:
-        print("Chain không khả dụng!!!!") 
-    print("chain", chainID)    
-
-    try:
-        while True:
-            try:
-                res = self.FundingAPI.get_currency()
-                result=res['data']
-                break
-            except:
-                time.sleep(1)
-        for data in result:
-            if  token == data['ccy'] and chainID == data['chain']:
-                print("data", data)
-                if data['canWd'] == False:
-                    print("Tạm dừng rút tiền rồi ", token, chain)
-                    return False, 0,0,0,0,0
-                else:
-                    print("Mạng rút bình thường!!!")
-                    minfee=data['minFee']
-                    maxfee=data['maxFee']
-                    minsize=data['minWd']
-                    maxsize=data['maxWd']
-                    wdTickSz = data['wdTickSz']
-                    return True, minfee, maxfee, minsize, maxsize, wdTickSz
-
-    except:
-        err = str(sys.exc_info())
-        #print("err", err)
-        print("Chain không khả dụng!!!"+ err)    
-        return "False1", 0,0,0,0,0
-
-def get_deposit_history_kraken(self, txt):  # Lấy lịch sử nạp tiền
-    res=  self.FundingAPI.get_deposit_history(txt)
-    status="Chưa thấy tín hiệu"
-    try:
-        token= res['data'][0]
-        if token['state'] == '2':
-            print("Nạp thành công!!!"+ str(token['ccy']))
-            status="Nạp thành công!" + str(token['ccy'])
-        else:
-            print("Nạp chuẩn! pending " + str(token['ccy']))
-            status="Nạp chuẩn! pending " + str(token['ccy'])  
-    except:
-        pass          
-    return status
-
-
-def get_withdraw_history_kraken(self, wd_id): # Lấy lịch sử rút tiền
-    try:
-        res_wd=  self.FundingAPI.get_withdrawal_history(wd_id)
-        if res_wd['code']=='0':
-            result=res_wd['data'][0]
-            symbol= result['chain']
-            status = "Không thấy trạng thái" + str(symbol)   
-            state = str(result['state'])
-            if state =='0':
-                status="waiting withdrawal" + str(symbol) 
-            elif state=='1':
-                status="withdrawing" + str(symbol)                          
-            elif state=='2':
-                print("withdraw success")
-                status="withdraw success" + str(symbol)  
-            elif state in ['4', '5', '6', '8', '9', '12']:
-                status="waiting mannual review" + str(symbol) 
-            elif state=='-1':
-                status="failed" + str(symbol) 
-            elif state=='-2':
-                status="canceled" + str(symbol)   
-            elif state=='-3':
-                status="canceling" + str(symbol)               
-
-    except:
-        print("Lỗi lấy data" +str(sys.exc_info()))  
-        status="Lỗi "+ str(sys.exc_info())           
-    return status
-
-
-def transfer_kraken(self, symbol, size, From , to):  # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
-    try:
-        token=symbol.upper()
-        res=  self.FundingAPI.funds_transfer(token, size, From, to, type='0')# 18:trading, 6: funding
-        #break
-    except:
-        print("Lỗi transfer main to trading_kraken ", str(sys.exc_info()))
-        return "Lỗi transfer main to trading_kraken " + str(sys.exc_info())
-    if res['code'] =='0':
-        print("chuyển tiền thành công")
-        status="chuyển tiền thành công"
-    else:
-        print("Lỗi chuyển tiền kraken "+ str(res))
-        status="Lỗi chuyển tiền kraken"+ str(res)
-    return status
-
-
-def submit_token_withdrawal_kraken(self, symbol, size, address, chain):  # Hàm rút tiền từ kraken về 
-    token=symbol.upper()
-    if chain=="Polygon":
-        chainID=token+"-"+ "Polygon"
-    elif chain=="OPT":
-        chainID= token+"-"+"Optimism"
-    elif chain=="BSC":
-        chainID=token+"-"+"BSC"
-    elif chain=="TRON":
-        chainID=token+"-"+"TRC20"               
-    elif chain=="AVAX":
-        chainID= token+"-"+"Avalanche C-Chain"  
-    elif chain=="ETH":
-        chainID=token+"-"+"ERC20" 
-    elif chain=="FTM":
-        chainID=token+"-"+"Fantom" 
-    elif chain=="ASTAR":
-        chainID=token+"-"+"Astar"         
-    elif chain=="SOL":
-        chainID=token+"-"+"Solana"
-    elif chain=="MOON":
-        chainID=token+"-"+"Moonriver"   
-    elif chain=="NEAR":
-        chainID=token+"-"+"NEAR"  
-    elif chain=="KLAY":
-        chainID=token+"-"+"Klaytn" 
-    elif chain=="OSMO":
-        chainID=token+"-"+"Cosmos" 
-    elif chain=="JUNO":
-        chainID=token+"-"+"Cosmos"  
-    elif chain=="ARB":
-        chainID=token+"-"+"Arbitrum one"   
-    elif chain=="BEAM":
-        chainID=token+"-"+"Moonbeam"
-    elif chain=="METIS":
-        chainID=token+"-"+"Metis"
-    elif chain=="APT":
-        chainID=token+"-"+"Aptos"    
-    elif chain=="OKT":
-        chainID=token+"-"+"OKC" 
-        if "ETH" in symbol:
-            chainID="ETHK"+"-"+"OKC"  
-        elif "BTC" in symbol:
-            chainID="BTCK"+"-"+"OKC" 
-        elif "DAI" in symbol:
-            chainID="DAIK"+"-"+"OKC"                                               
-    else:
-        print("Chain không khả dụng!!!!") 
-    print("chain", chainID)
-
-    balance, balance_funding, balance_trading= self.get_balances_kraken(token)
-    tag, minfee, maxfee, minsize, maxsize, wdTickSz= self.get_status_withdrawal_kraken(token, chain)
-    list_fee_ruttien = [float(minfee)*1.1, (float(minfee)*1.1 + float(maxfee))/2 , float(maxfee)]
-    if float(balance)>0 and float(balance)>=float(size):
-        if float(balance_funding)<float(size):
-            amout1= int(float(size)*10**3)/(10**3)
-            res1=  self.transfer_kraken(token, amout1, "18", "6")
-        for fee_rutien in list_fee_ruttien:
-            try:
-                if int(wdTickSz) >3:
-                    wdTickSz =3
-                print("wdTickSz ", wdTickSz)
-                size = int((float(size)-fee_rutien)*10**int(wdTickSz))/(10**int(wdTickSz))
-                print("size ", size)
-                res=  self.FundingAPI.coin_withdraw(token, size,  "4" , address, chainID, str(fee_rutien))
-                print("submit_token_withdrawal_kraken ", res)
-                if res['code'] =='0':
-                    
-                    withdrawal_ID=res['data'][0]['wdId']
-                    print("withdrawal_ID", withdrawal_ID)
-                    print("Đã rút tiền chờ tiền về tài khoản!")
-                    status = "Đã rút tiền chờ tiền về tài khoản!"
-                    return True, status, withdrawal_ID                                   
-                else:
-                    print("Rút tiền thất bại! " + str(res['msg']) + "fee =" + str(fee_rutien))
-                    status= res['msg']
-                    continue
-            except:
-                err = str(sys.exc_info())
-                print("Lỗi submit_token_withdrawal_kraken ", err)
-                continue
-        return False, status, 0
-    else:
-        print("Không đủ tiền để rút rồi người đẹp!")
-        status = "Không đủ tiền rút rồi!!!"
-        return False, status, 0

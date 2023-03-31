@@ -14,15 +14,20 @@ class Client(object):
         self.API_KEY = api_key
         self.API_SECRET_KEY = api_secret_key
 
+    def _public_request(self, method, request_path):
+        url = c.API_URL + request_path
+        print(f"_public_request {url}")
+        response = requests.get(url)
+        return response.json()
+
     def _request(self, method, request_path, params):
 
-        print(f"request_path {request_path}")
+        print(f"request_path {request_path} params {params}")
 
         if method == c.GET:
             request_path = request_path + utils.parse_params_to_str(params)
         # url
         url = c.API_URL + request_path
-
         timestamp = utils.get_timestamp()
 
         # sign & header
@@ -36,22 +41,24 @@ class Client(object):
         mac = hmac.new(base64.b64decode(self.API_SECRET_KEY), message, hashlib.sha512)
         sigdigest = base64.b64encode(mac.digest())
         signature = sigdigest.decode()
-       
+    
         header = utils.get_header(self.API_KEY, signature)
+       
 
         # send request
         response = None
 
         print("url:", url)
         print("headers:", header)
-        print("body:", body, type(body))
+        print("body:", params)
 
         if method == c.GET:
             response = requests.get(url, headers=header)
+            print(f"response === {response.json()} - {response.status_code}")
         elif method == c.POST:
             try:
                 response = requests.post(url, headers=header, data=params)
-                print(f"response === {response.json()} - {response.status_code}")
+                print(f"response post === {response.json()} - {response.status_code}")
             except Exception as e:
                 print(f"Exception {e}")
                 exit
