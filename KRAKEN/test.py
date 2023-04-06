@@ -8,16 +8,12 @@ import urllib.parse
 
 api_key = 'ckLFiOjFcq/UQ4z1nnscsQ8Ejdq4bf7TtGJX7UXc4E123/sX8uGbQKc7'
 api_secret = '/YVJ/6SqsczOy2pW8VstkNmyEv0jDajbia8Y5Mxmgzl9X/zcp50KD4W5wftOmMn44QjLb0Q0v2HMP2pbdeXCIw=='
-url = "https://api.kraken.com/0/private/WalletTransfer"
-request_path = "/0/private/WalletTransfer"
+request_path = "/0/private/Balance"
+url = "https://api.kraken.com" + request_path
 nonce = int(time.time() * 1000)
 
 data = {
-    "nonce": nonce, 
-    "asset": "ETH", 
-    "amount": 1, 
-    "from": "Spot Wallet", 
-    "to": "Futures Wallet"
+    "nonce": nonce
 }
 
 # Generate signature

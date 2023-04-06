@@ -15,11 +15,9 @@ class AccountAPI(Client):
         return self._request_with_params(GET, POSITION_RISK, params)
 
     # Get Balance
-    def get_account(self, ccy=None):
-        params = {}
-        if ccy:
-            params['ccy'] = ccy
-        return self._request_with_params(GET, ACCOUNT_INFO, params)
+    def get_account(self, nonce=None, asset=None):
+        params = {"nonce": nonce, "asset": asset}
+        return self._request_with_params(POST, ACCOUNT_INFO, params)
 
     # Get Positions
     def get_positions(self, instType=None, instId=None):

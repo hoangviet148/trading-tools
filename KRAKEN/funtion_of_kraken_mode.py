@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from lib2to3.pgen2 import token
 from unittest import result
 import os
-import pandas as pd
+# import pandas as pd
 
 import kraken.Account_api as Account
 import kraken.Funding_api as Funding
@@ -20,7 +20,7 @@ import kraken.status_api as Status
 
 import logging
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from decouple import config
+# from decouple import config
 
 scraper = cloudscraper.create_scraper()
 path_file = os.path.dirname(os.path.abspath(__file__))
@@ -69,31 +69,28 @@ class KRAKEN_FUNCTION:
             (10**int(decimal_places))
         return number
 
-    def get_balances_kraken(self, symbol):  # Check số dư của 1 token trên sàn
-        token = symbol.upper()
+    def get_balances_kraken(self, asset):  # Check số dư của 1 token trên sàn
         while True:
             try:
-                res = self.FundingAPI.get_balances(token)
+                nonce = int(time.time() * 1000)
+                res = self.FundingAPI.get_balances(nonce=nonce)
                 #print("res", res)
-                balance_funding = res['data'][0]['availBal']
+                balance_funding = res['result'][asset]
                 break
             except:
                 time.sleep(1)
                 continue
         while True:
             try:
-                res1 = self.AccountAPI.get_account(token)
+                nonce = int(time.time() * 1000)
+                res1 = self.AccountAPI.get_account(nonce=nonce, asset=asset)
                 #print("res1", res1)
-                balance_trading = res1['data'][0]['details']
+                balance_trading = res1['result']['tb']
                 break
             except:
                 time.sleep(1)
                 continue
 
-        if len(balance_trading) == 0:
-            balance_trading = 0
-        else:
-            balance_trading = balance_trading[0]['availBal']
         #print("balance_trading ", balance_trading)
         balance = float(balance_funding)+float(balance_trading)
         return self.convert_number_to_smaller(float(balance)), self.convert_number_to_smaller(float(balance_funding)), self.convert_number_to_smaller(float(balance_trading))
@@ -633,34 +630,34 @@ class KRAKEN_FUNCTION:
     # Lấy lịch sử nạp tiền
     def get_deposit_history_kraken(self, asset, method):
         nonce = int(time.time() * 1000)
-        res = self.FundingAPI.get_deposit_history(nonce=nonce, asset=asset, method=method)
-        status = "Chưa thấy tín hiệu"
+        res = self.FundingAPI.get_deposit_history(
+            nonce=nonce, asset=asset, method=method)
+        status = []
         if len(res['error']) == 0:
-            if res['result']['status'] == 'Failure':
-                print(f"status Failure")
-                status = "Failure"
-            else:
-                print(f"status Success")
-                status = "Success"
+            for res_dep in res['result']:
+                status.append(res_dep['status'])
         else:
             print(res['error'])
         return status
 
     def get_withdraw_history_kraken(self):  # Lấy lịch sử rút tiền
         nonce = int(time.time() * 1000)
+        status = []
         try:
             res = self.FundingAPI.get_withdrawal_history(nonce=nonce)
+            if len(res['result']) == 0:
+                return ["No recent withdraw transaction!"]
             for res_wd in res['result']:
                 if res_wd['status'] == 'canceled':
-                    status = "canceled" + str(symbol)
+                    status.append("canceled" + str(symbol))
                 elif res_wd['status'] == 'Pending':
-                    status = "Pending" + str(symbol)
+                    status.append("Pending" + str(symbol))
         except:
             print("Lỗi lấy data" + str(sys.exc_info()))
-            status = "Lỗi " + str(sys.exc_info())
+            status.append("Lỗi " + str(sys.exc_info()))
         return status
 
-    # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
+    # Chuyển tiền trong nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
     def transfer_kraken(self, asset, amount, From, to):
         nonce = int(time.time() * 1000)
         try:
@@ -679,66 +676,17 @@ class KRAKEN_FUNCTION:
         return status
 
     # Hàm rút tiền từ kraken về
-    def submit_token_withdrawal_kraken(self, symbol, size, address, chain):
-        token = symbol.upper()
-        if chain == "Polygon":
-            chainID = token+"-" + "Polygon"
-        elif chain == "OPT":
-            chainID = token+"-"+"Optimism"
-        elif chain == "BSC":
-            chainID = token+"-"+"BSC"
-        elif chain == "TRON":
-            chainID = token+"-"+"TRC20"
-        elif chain == "AVAX":
-            chainID = token+"-"+"Avalanche C-Chain"
-        elif chain == "ETH":
-            chainID = token+"-"+"ERC20"
-        elif chain == "FTM":
-            chainID = token+"-"+"Fantom"
-        elif chain == "ASTAR":
-            chainID = token+"-"+"Astar"
-        elif chain == "SOL":
-            chainID = token+"-"+"Solana"
-        elif chain == "MOON":
-            chainID = token+"-"+"Moonriver"
-        elif chain == "NEAR":
-            chainID = token+"-"+"NEAR"
-        elif chain == "KLAY":
-            chainID = token+"-"+"Klaytn"
-        elif chain == "OSMO":
-            chainID = token+"-"+"Cosmos"
-        elif chain == "JUNO":
-            chainID = token+"-"+"Cosmos"
-        elif chain == "ARB":
-            chainID = token+"-"+"Arbitrum one"
-        elif chain == "BEAM":
-            chainID = token+"-"+"Moonbeam"
-        elif chain == "METIS":
-            chainID = token+"-"+"Metis"
-        elif chain == "APT":
-            chainID = token+"-"+"Aptos"
-        elif chain == "OKT":
-            chainID = token+"-"+"OKC"
-            if "ETH" in symbol:
-                chainID = "ETHK"+"-"+"OKC"
-            elif "BTC" in symbol:
-                chainID = "BTCK"+"-"+"OKC"
-            elif "DAI" in symbol:
-                chainID = "DAIK"+"-"+"OKC"
-        else:
-            print("Chain không khả dụng!!!!")
-        print("chain", chainID)
-
+    def submit_token_withdrawal_kraken(self, asset, amount, address, chain):        
         balance, balance_funding, balance_trading = self.get_balances_kraken(
-            token)
-        tag, minfee, maxfee, minsize, maxsize, wdTickSz = self.get_status_withdrawal_kraken(
+            asset)
+        minfee, maxfee, wdTickSz = self.get_status_withdrawal_kraken(
             token, chain)
         list_fee_ruttien = [
             float(minfee)*1.1, (float(minfee)*1.1 + float(maxfee))/2, float(maxfee)]
         if float(balance) > 0 and float(balance) >= float(size):
             if float(balance_funding) < float(size):
                 amout1 = int(float(size)*10**3)/(10**3)
-                res1 = self.transfer_kraken(token, amout1, "18", "6")
+                res1 = self.transfer_kraken(asset, amout1, "18", "6")
             for fee_rutien in list_fee_ruttien:
                 try:
                     if int(wdTickSz) > 3:
@@ -775,9 +723,6 @@ class KRAKEN_FUNCTION:
 
 toolkraken = KRAKEN_FUNCTION(keypass='')
 
-# print(toolkraken.real_buy_market_ETH(0.5, 0, "", False, 5))
-# print(toolkraken.real_buy_market_in_kraken("ETH", "USDT", 10, 0, "", False, 5))
-
 # print(f'=== 1 ETH buy {toolkraken.get_return_buy_kraken(symbol="LTC", usd="ETH", amountin=1, proxy="", fake_ip=False)} LTC')
 # print(f'=== 1 ETH buy {toolkraken.get_return_buy_kraken_withETH(symbol="LTC", usd="ETH", amountin=1, proxy="", fake_ip=False)} LTC')
 # print(f'=== 1 LTC sell {toolkraken.get_return_sell_kraken(symbol="LTC", usd="USDT", amountin=1, proxy="", fake_ip=False)} USDT')
@@ -788,15 +733,23 @@ toolkraken = KRAKEN_FUNCTION(keypass='')
 # print(
 #     f'=== 1 LTC sell {toolkraken.get_best_return_sell_kraken_withETH(symbol="LTC", amountin=1, proxy="", fake_ip=False)}')
 
+# print(toolkraken.find_quantity_price_buy_kraken("ETH", 1, "USDT", "", "", 0.1))
+# print(toolkraken.find_quantity_price_sell_kraken("ETH", 1, "USDT", "", "", 0.1))
+
+# print(toolkraken.real_buy_market_ETH(0.5, 0, "", False, 5)) # not done
+# print(toolkraken.real_buy_market_in_kraken("ETH", "USDT", 10, 0, "", False, 5)) # not done
 # print(toolkraken.real_sell_in_kraken("LTC",
-#       "USDT", 1136518771, 0, "proxy", False, 5))
+#       "USDT", 1136518771, 0, "proxy", False, 5)) # not done
 # print(toolkraken.real_sell_market_in_kraken("LTC",
-#       "USDT", 1136518771, 0, "proxy", False, 5))
+#       "USDT", 1136518771, 0, "proxy", False, 5)) # not done
 
 
 # print(toolkraken.get_deposit_address_kraken("XBT", "Bitcoin"))
 # print(toolkraken.get_status_deposit_kraken("XBT", "Bitcoin"))
 # print(toolkraken.get_status_withdrawal_kraken("USDT", "usdt-wd", 2))
 # print(toolkraken.get_deposit_history_kraken("USDT", "Tether USD (TRC20)"))
-# print(toolkraken.transfer_kraken("USDT", "1", "Spot Wallet", "Futures Wallet"))
+# print(toolkraken.get_withdraw_history_kraken())
+# print(toolkraken.transfer_kraken("USDT", "5", "Spot Wallet", "Futures Wallet"))
+# print(toolkraken.get_balances_kraken("USDT"))
+# print(toolkraken.submit_token_withdrawal_kraken("USDT")) # not done
 

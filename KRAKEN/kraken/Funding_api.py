@@ -18,9 +18,9 @@ class FundingAPI(Client):
         return self._request_with_params(POST, DEPOSIT_ADDRESS, params)
 
     # Get Balance
-    def get_balances(self, ccy=None):
-        params = {'ccy': ccy}
-        return self._request_with_params(GET, GET_BALANCES, params)
+    def get_balances(self, nonce=None):
+        params = {'nonce': nonce}
+        return self._request_with_params(POST, GET_BALANCES, params)
 
     # Get Account Configuration
     def funds_transfer(self, nonce, asset, amount, From, to):

@@ -18,7 +18,7 @@ SERVER_TIMESTAMP_URL = '/api/v5/public/time'
 
 # account
 POSITION_RISK='/api/v5/account/account-position-risk'
-ACCOUNT_INFO = '/api/v5/account/balance'
+ACCOUNT_INFO = '/0/private/TradeBalance'
 POSITION_INFO = '/api/v5/account/positions'
 BILLS_DETAIL = '/api/v5/account/bills'
 BILLS_ARCHIVE = '/api/v5/account/bills-archive'
@@ -39,7 +39,7 @@ MAX_WITHDRAWAL = '/api/v5/account/max-withdrawal'
 # funding
 DEPOSIT_ADDRESS = '/0/private/DepositAddresses'
 WITHDRAWAL_INFO = '/0/private/WithdrawInfo'
-GET_BALANCES = '/api/v5/asset/balances'
+GET_BALANCES = '/0/private/Balance'
 FUNDS_TRANSFER = '/0/private/WalletTransfer'
 WITHDRAWAL_COIN = '/api/v5/asset/withdrawal'
 DEPOSIT_HISTORIY = '/0/private/DepositStatus'
