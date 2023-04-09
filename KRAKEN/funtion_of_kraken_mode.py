@@ -285,8 +285,8 @@ class KRAKEN_FUNCTION:
             print("Do truot gia cua san qua cao")
             return "Do truot gia cua san qua cao"
         if quantity < amoutoutmin:
-            print("real_buy_in_kraken quantity" + str(quantity) +
-                  " < amoutoutmin" + str(amoutoutmin))
+            print("real_buy_in_kraken quantity: " + str(quantity) +
+                  " < amoutoutmin: " + str(amoutoutmin))
             return "Bé hơn amoutoutmin rồi!!!"
         if "e" in str(price):
             price = f'{price:.20f}'
@@ -312,7 +312,7 @@ class KRAKEN_FUNCTION:
             print("Đã đặt lệnh sell market thành công")
         else:
             print("Lỗi buy market rồi....." + str(result))
-            return "Lỗi buy market rồi....." + str(result)
+            # return result
 
         # print("order_id1 sell market ", order_id)
 
@@ -367,12 +367,13 @@ class KRAKEN_FUNCTION:
         amountinfirst = amounin
         for i in range(4):
             result = self.real_buy_market_in_kraken(
-                "ETH", "USDT", amounin, amoutoutmin, proxy, fake_ip, truotgiasan)
+                "ETH", "USD", amounin, amoutoutmin, proxy, fake_ip, truotgiasan)
             print(f"result: {result}")
             if "MUA OK." in result:
                 print("lệnh mua ETH theo market hoàn tất")
                 return result
             else:
+                print(f"result else: {result}")
                 amountin_dakhoplenh = float(result.split("Hết =")[1])
                 amoutethnhanduoc = float(result.split("Hết =")[
                                          0].split("Nhận ")[1])
@@ -736,8 +737,9 @@ toolkraken = KRAKEN_FUNCTION(keypass='')
 # print(toolkraken.find_quantity_price_buy_kraken("ETH", 1, "USDT", "", "", 0.1))
 # print(toolkraken.find_quantity_price_sell_kraken("ETH", 1, "USDT", "", "", 0.1))
 
-# print(toolkraken.real_buy_market_ETH(0.5, 0, "", False, 5)) # not done
-# print(toolkraken.real_buy_market_in_kraken("ETH", "USDT", 10, 0, "", False, 5)) # not done
+# print(toolkraken.get_depth_kraken("ETH", "USDT", "", ""))
+print(toolkraken.real_buy_market_in_kraken("XXBTZ", "USD", 10, 0.0003, "", "", 0.5)) 
+# print(toolkraken.real_buy_market_ETH(10, 0.002, "", "", 0.5)) # not done
 # print(toolkraken.real_sell_in_kraken("LTC",
 #       "USDT", 1136518771, 0, "proxy", False, 5)) # not done
 # print(toolkraken.real_sell_market_in_kraken("LTC",
