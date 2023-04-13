@@ -27,7 +27,6 @@ path_file = os.path.dirname(os.path.abspath(__file__))
 
 flag = '0'
 
-
 class KRAKEN_FUNCTION:
     def __init__(self, keypass=None):
         print("Init")
@@ -74,7 +73,7 @@ class KRAKEN_FUNCTION:
             try:
                 nonce = int(time.time() * 1000)
                 res = self.FundingAPI.get_balances(nonce=nonce)
-                #print("res", res)
+                # print("res", res)
                 balance_funding = res['result'][asset]
                 break
             except:
@@ -84,14 +83,14 @@ class KRAKEN_FUNCTION:
             try:
                 nonce = int(time.time() * 1000)
                 res1 = self.AccountAPI.get_account(nonce=nonce, asset=asset)
-                #print("res1", res1)
+                # print("res1", res1)
                 balance_trading = res1['result']['tb']
                 break
             except:
                 time.sleep(1)
                 continue
 
-        #print("balance_trading ", balance_trading)
+        # print("balance_trading ", balance_trading)
         balance = float(balance_funding)+float(balance_trading)
         return self.convert_number_to_smaller(float(balance)), self.convert_number_to_smaller(float(balance_funding)), self.convert_number_to_smaller(float(balance_trading))
 
@@ -124,7 +123,7 @@ class KRAKEN_FUNCTION:
         result = self.get_depth_kraken(symbol, usd, proxy, fake_ip)
         try:
             list_asks = result['asks']
-            #print("list_asks ", list_asks)
+            # print("list_asks ", list_asks)
         except:
             return 0
         sum_value_ask = 0
@@ -137,13 +136,13 @@ class KRAKEN_FUNCTION:
                 # print(ask)
                 tien_con_thieu = amountin - \
                     (sum_value_ask - float(ask[0])*float(ask[1]))
-                #print("tien_con_thieu ", tien_con_thieu)
+                # print("tien_con_thieu ", tien_con_thieu)
                 total_return = total_volume - \
                     float(ask[1]) + tien_con_thieu/float(ask[0])
-                #print("total_return", total_return)
+                # print("total_return", total_return)
                 return float(total_return)*(100-0.1)/100
         if float(sum_value_ask) < float(amountin):
-            return (total_volume)*(100-0.1)/100
+            return (total_volume)*(100-0.26)/100
 
     # Kiểm tra nếu dùng 1 số coin thì bán ra được bao nhiêu đồng usd
     def get_return_sell_kraken(self, symbol, usd, amountin, proxy, fake_ip):
@@ -157,77 +156,19 @@ class KRAKEN_FUNCTION:
         for bid in list_bids:
             sum_value_bids = sum_value_bids + float(bid[0])*float(bid[1])
             total_volume = total_volume + float(bid[1])
-            #print("sum_value_bids", sum_value_bids)
-            #print("total_volume", total_volume)
+            # print("sum_value_bids", sum_value_bids)
+            # print("total_volume", total_volume)
             # print("------------")
             if float(total_volume) >= float(amountin):
                 # print(bid)
                 tien_con_thieu = amountin - (total_volume - float(bid[1]))
-                #print("tien_con_thieu", tien_con_thieu)
+                # print("tien_con_thieu", tien_con_thieu)
                 total_return = sum_value_bids - \
                     float(bid[0])*float(bid[1]) + tien_con_thieu*float(bid[0])
-                #print("total_return", total_return)
-                return float(total_return)*(100-0.1)/100
+                # print("total_return", total_return)
+                return float(total_return)*(100-0.26)/100
         if float(total_volume) < float(amountin):
-            return float(sum_value_bids)*(100-0.1)/100
-
-    # Tuyến đường mua sẽ là ETH --> USDT --> Token
-    def get_return_buy_kraken_withETH(self, symbol, usd, amountin, proxy, fake_ip):
-        result_sell_ETH = self.get_return_sell_kraken(
-            "ETH", "USDT", amountin, proxy, fake_ip)
-        # print(f"result_sell_ETH {result_sell_ETH}")
-        result_buy_token = self.get_return_buy_kraken(
-            symbol, "USDT", result_sell_ETH, proxy, fake_ip)
-        # print("result_buy_token ", result_buy_token)
-        return result_buy_token
-
-    # Tuyến đường bán sẽ là Token --> USDT --> ETH
-    def get_return_sell_kraken_withETH(self, symbol, usd, amountin, proxy, fake_ip):
-        result_sell_token = self.get_return_sell_kraken(
-            symbol, 'USDT', amountin, proxy, fake_ip)
-        # print("result_sell_token ", result_sell_token)
-        result = self.get_return_buy_kraken(
-            'ETH', 'USDT', result_sell_token, proxy, fake_ip)
-        # print("result ", result)
-        return result
-
-    # Hàm này để xem mua bằng ETH --> Token hay ETH --> USDT --> Token được lợi hơn
-    def get_best_return_buy_kraken_withETH(self, symbol, amountin, proxy, fake_ip):
-        executor = ThreadPoolExecutor(max_workers=2)
-        list_hop = ['ETH', 'USDTETH']
-        res = []
-        f1 = executor.submit(self.get_return_buy_kraken, symbol, "ETH",
-                             amountin, proxy, fake_ip)  # Mua trực tiếp bằng ETH
-        f2 = executor.submit(self.get_return_buy_kraken_withETH, symbol,
-                             "USDT", amountin, proxy, fake_ip)  # USDT -> ETH ->token
-
-        res.append(f1.result())
-        res.append(f2.result())
-
-        print(res)
-
-        max_result_buy = max(res)
-        max_index_buy = res.index(max_result_buy)
-
-        return max_result_buy, list_hop[max_index_buy]
-
-    # Hàm này để xem bán token --> ETH  hay Token --> USDT --> ETH được lợi hơn
-    def get_best_return_sell_kraken_withETH(self, symbol, amountin, proxy, fake_ip):
-        executor = ThreadPoolExecutor(max_workers=2)
-        list_hop = ['ETH', 'USDTETH']
-        res = []
-        f1 = executor.submit(self.get_return_sell_kraken, symbol, "ETH",
-                             amountin, proxy, fake_ip)  # Mua trực tiếp bằng ETH
-        f2 = executor.submit(self.get_return_sell_kraken_withETH, symbol,
-                             "USDT", amountin, proxy, fake_ip)  # USDT -> ETH ->token
-
-        res.append(f1.result())
-        res.append(f2.result())
-        print("res get_best_return_sell_kraken_withETH ", res)
-        max_result_sell = max(res)
-        max_index_sell = res.index(max_result_sell)
-
-        return max_result_sell, list_hop[max_index_sell]
+            return float(sum_value_bids)*(100-0.26)/100
 
     # Tìm giá khớp lệnh cuối cùng, và lượng token có thể nhận được khi mua
     def find_quantity_price_buy_kraken(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
@@ -267,136 +208,86 @@ class KRAKEN_FUNCTION:
 
         if float(sum_value_ask) < float(amountin):
             # 0.1 là phí giao dịch của KRAKEN
-            return price_find, total_volume*(100-0.1)/100
+            return price_find, total_volume*(100-0.26)/100
 
-    # Hàm mua theo market
-    def real_buy_market_in_kraken(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
-        token_name = token_name.upper()
-        token_usd = token_usd.upper()
+    # lệnh buy cần tính chuẩn với khối lượng 1000 usdt mua
+    # Hàm mua theo limit
+    def real_buy_in_kraken(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
         symbol = token_name + token_usd
-        symbol1 = token_name + "-" + token_usd
-        symbol2 = token_name
-
         price, quantity = self.find_quantity_price_buy_kraken(
-            symbol=symbol2, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
+            symbol=token_name, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
         print("price", price)
         print("quantity", quantity)
         if quantity == 0:
             print("Do truot gia cua san qua cao")
             return "Do truot gia cua san qua cao"
         if quantity < amoutoutmin:
-            print("real_buy_in_kraken quantity: " + str(quantity) +
-                  " < amoutoutmin: " + str(amoutoutmin))
+            print("real_buy_in_kraken quantity" + str(quantity) +
+                  " < amoutoutmin" + str(amoutoutmin))
             return "Bé hơn amoutoutmin rồi!!!"
         if "e" in str(price):
             price = f'{price:.20f}'
         else:
-            price = price  # 1.336e-09
-
+            price = price
         Klin = int(quantity*10**4)/(10**4)
         print("Klin ", Klin)
         print("price ", price)
         nonce = int(time.time() * 1000)
         try:
             result = self.TradeAPI.place_order(
-                nonce=nonce, ordertype='limit', pair=symbol, price=price, type_='buy', volume=amounin)
-            print(f"=== result buy market === {result}")
-
-        except Exception as e:
-            print("Lỗi buy market ", sys.exc_info(), e)
+                nonce=nonce, ordertype='limit', pair=symbol, price=price, type_='buy', volume=Klin)
+            print("result", result)
+        except:
+            print("Lỗi ", sys.exc_info())
 
         if len(result['error']) == 0:
-            # order_id = result['data'][0]['ordId']
-            # print("order_id sell market ", order_id)
-            # amountout=result['size']/result['price']
-            print("Đã đặt lệnh sell market thành công")
+            order_id = result['result']['txid'][0]
+            print("Đã đặt lệnh thành công")
         else:
-            print("Lỗi buy market rồi....." + str(result))
-            # return result
+            print("Lỗi rồi.....", result)
+            return result
 
-        # print("order_id1 sell market ", order_id)
-
+        print("order_id", order_id)
         for i in range(4):
-            order_details = self.TradeAPI.get_orders(symbol1, order_id)
+            nonce = int(time.time() * 1000)
+            order_details = self.TradeAPI.get_orders(nonce, order_id)
             print("get_order_details ", order_details)
-
-            deal_price = order_details['data'][0]['avgPx']
+            deal_price = order_details['result'][order_id]['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['data'][0]['accFillSz']
+            dealSize = order_details['result'][order_id]['vol']
             print("dealSize", dealSize)
-            status = order_details['data'][0]['state']
+            status = order_details['result'][order_id]['status']
             print("status", status)
-            if 'live' in status or 'partially_filled' in status:
+            if 'open' in status or 'partial' in status:
                 if i > 2:
                     print("Lệnh đang buy market còn mở")
-                    try:
-                        result = self.TradeAPI.cancel_order(symbol1, order_id)
-                        print("result_cancel_buy", result)
-                        if result['data'][0]['sCode'] == '0':
-                            print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
-                            if deal_price == '0':
-                                result = "KHÔNG MUA ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!. ETH Nhận " + \
-                                    str(dealSize) + "Hết =" + \
-                                    str(float(dealSize)*float(deal_price))
-                            else:
-                                result = "1 Phần. ĐÃ HỦY LỆNH. ETH Nhận " + \
-                                    str(dealSize) + "Hết =" + \
-                                    str(float(dealSize)*float(deal_price))
+                    nonce = int(time.time() * 1000)
+                    result = self.TradeAPI.cancel_order(nonce, order_id)
+                    print("result_cancel_buy", result)
+                    if result['result']['count'] == '1':
+                        print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
+                        if deal_price == '0':
+                            result = "KHÔNG MUA ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!"
                         else:
-                            result = "HỦY LỆNH THẤT BẠI!!! Vào Hủy tay đi chị đẹp. ETH Nhận " + \
-                                str(dealSize) + "Hết =" + \
-                                str(float(dealSize)*float(deal_price))
-                    except:
-                        result = "Lỗi request hủy lệnh!!! Vào Hủy tay đi chị đẹp. ETH Nhận " + \
-                            str(dealSize) + "Hết =" + \
-                            str(float(dealSize)*float(deal_price))
+                            result = "1 Phần. Nhận " + str(dealSize) + "Hết =" + str(
+                                float(dealSize)*float(deal_price)) + " ĐÃ HỦY LỆNH THÀNH CÔNG"
+                    else:
+                        result = "HỦY LỆNH THẤT BẠI!!! Vào Hủy tay đi chị đẹp"
                     break
             else:
-                result = "MUA MARKET OK. ETH Nhận " + \
+                result = "MUA OK. Nhận " + \
                     str(dealSize) + "Hết =" + \
                     str(float(dealSize)*float(deal_price))
                 break
             time.sleep(1)
-
         return result
-
-    # Hàm mua ETH bằng USDT theo market
-    def real_buy_market_ETH(self, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
-        tonggiatridakhop = 0
-        tongethdamua = 0
-        amountinfirst = amounin
-        for i in range(4):
-            result = self.real_buy_market_in_kraken(
-                "ETH", "USD", amounin, amoutoutmin, proxy, fake_ip, truotgiasan)
-            print(f"result: {result}")
-            if "MUA OK." in result:
-                print("lệnh mua ETH theo market hoàn tất")
-                return result
-            else:
-                print(f"result else: {result}")
-                amountin_dakhoplenh = float(result.split("Hết =")[1])
-                amoutethnhanduoc = float(result.split("Hết =")[
-                                         0].split("Nhận ")[1])
-                tonggiatridakhop = tonggiatridakhop + amountin_dakhoplenh
-                tongethdamua = tongethdamua + amoutethnhanduoc
-                if tonggiatridakhop > float(amountinfirst)*0.998:
-                    print("Đã khớp tương đối rồi")
-                    return f"Đã Mua xong {i} lần. Nhận {tongethdamua} ETH Hết = {tonggiatridakhop}"
-                amountin_chuakhoplenh = float(amounin) - amountin_dakhoplenh
-                amounin = amountin_chuakhoplenh
-
-        return f"Đã Mua xong {i} lần. Nhận {tongethdamua} ETH Hết = {tonggiatridakhop} $"
 
     # Hàm bán token theo limit
     def real_sell_in_kraken(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
-        token_name = token_name.upper()
-        token_usd = token_usd.upper()
-        symbol = str(token_name) + str(token_usd)
-        symbol1 = str(token_name) + str("-" + token_usd+"")
-        symbol2 = str(token_name)
+        symbol = token_name + token_usd
 
         price, quantity = self.find_quantity_price_sell_kraken(
-            symbol=symbol2, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
+            symbol=token_name, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
         if "e" in str(price):
             price = f'{price:.20f}'
         else:
@@ -462,6 +353,7 @@ class KRAKEN_FUNCTION:
     # Tìm giá khơp lệnh cuối cùng và số tiền nhận được khi bán token
     def find_quantity_price_sell_kraken(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
         result = self.get_depth_kraken(symbol, token_usd, proxy, fake_ip)
+        print(f"get_depth_kraken {result}")
         try:
             list_bids = result['bids']
         except:
@@ -486,7 +378,7 @@ class KRAKEN_FUNCTION:
                     float(bid[0])*float(bid[1]) + tien_con_thieu*float(bid[0])
                 print("total_return", total_return)
                 return price_find, total_return*(100-0.1)/100
-            #print("price", price_find )
+            # print("price", price_find )
         if float(price_find) < price_start/(1+float(truotgiasan)/100):
             print("SOS " + str(price_find)+" " + str(price_start))
             return 10000000, 0
@@ -494,84 +386,7 @@ class KRAKEN_FUNCTION:
               "price_find " + (price_find))
 
         if float(total_volume) < float(amountin):
-            return price_find, sum_value_bids * (100-0.1)/100
-
-    # Hàm Bán token theo market
-    def real_sell_market_in_kraken(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
-        token_name = token_name.upper()
-        token_usd = token_usd.upper()
-        symbol = token_name + token_usd
-        symbol1 = token_name + "-" + token_usd
-        symbol2 = token_name
-        price, quantity = self.find_quantity_price_sell_kraken(
-            symbol=symbol2, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
-
-        print("quantity", quantity)
-        if quantity == 0:
-            print("Do truot gia cua san qua cao")
-            return "Do truot gia cua san qua cao"
-        if quantity < amoutoutmin:
-            print("real_sell_in_kraken quantity" + str(quantity) +
-                  " < amoutoutmin" + str(amoutoutmin))
-            return "Bé hơn amoutoutmin rồi!!!"
-
-        Klin = int(amounin*10**4)/(10**4)
-        try:
-            result = self.TradeAPI.place_order(
-                instId=symbol1, tdMode='cash', side='sell', ordType='market', sz=Klin)
-
-        except:
-            print("Lỗi real_sell_market_in_kraken", sys.exc_info())
-
-        print("result sell market ", result)
-        if result['data'][0]['sCode'] == '0':
-            order_id = result['data'][0]['ordId']
-            print("order_id sell market ", order_id)
-            print("Đã đặt lệnh sell market thành công")
-        else:
-            print("Lỗi sell market rồi.....")
-
-        print("order_id1 sell market ", order_id)
-
-        for i in range(4):
-            order_details = self.TradeAPI.get_orders(symbol1, order_id)
-            print("get_order_details ", order_details)
-            deal_price = order_details['data'][0]['avgPx']
-            print("deal_fund", deal_price)
-            dealSize = order_details['data'][0]['accFillSz']
-            print("dealSize", dealSize)
-            status = order_details['data'][0]['state']
-            print("status", status)
-            if 'live' in status or 'partially_filled' in status:
-                if i > 2:
-                    try:
-                        print("Lệnh sell đang còn mở")
-                        result = self.TradeAPI.cancel_order(symbol1, order_id)
-                        print("result_cancel_buy", result)
-                        if result['data'][0]['sCode'] == '0':
-                            print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
-                            if deal_price == '0':
-                                result = "KHÔNG BÁN ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!! HẾT " + \
-                                    str(dealSize) + "Nhận được =" + \
-                                    str(float(dealSize)*float(deal_price))
-                            else:
-                                result = "Bán 1 Phần ĐÃ HỦY LỆNH THÀNH CÔNG. HẾT " + \
-                                    str(dealSize) + "Nhận được =" + \
-                                    str(float(dealSize)*float(deal_price))
-                        else:
-                            result = "HỦY LỆNH THẤT BẠI!!! Vào Hủy tay đi chị đẹp HẾT " + \
-                                str(dealSize) + "Nhận được =" + \
-                                str(float(dealSize)*float(deal_price))
-                    except:
-                        result = "LỖI request hủy LỆNH! Vào Hủy tay đi chị đẹp HẾT " + \
-                            str(dealSize) + "Nhận được =" + \
-                            str(float(dealSize)*float(deal_price))
-                    break
-            else:
-                result = f"THÀNH CÔNG. BÁN {Klin} {token_name} Nhận được {str(float(dealSize)*float(deal_price))} "
-                break
-            time.sleep(1)
-        return result
+            return price_find, sum_value_bids * (100-0.26)/100
 
     # Lấy địa chỉ nạp tiền lên kraken
     def get_deposit_address_kraken(self, symbol, chain):
@@ -676,8 +491,8 @@ class KRAKEN_FUNCTION:
             status = "Lỗi chuyển tiền kraken" + str(res)
         return status
 
-    # Hàm rút tiền từ kraken về
-    def submit_token_withdrawal_kraken(self, asset, amount, address, chain):        
+    # Hàm rút tiền từ kraken về  ví metamask
+    def submit_token_withdrawal_kraken(self, asset, amount, address, chain):
         balance, balance_funding, balance_trading = self.get_balances_kraken(
             asset)
         minfee, maxfee, wdTickSz = self.get_status_withdrawal_kraken(
@@ -724,27 +539,15 @@ class KRAKEN_FUNCTION:
 
 toolkraken = KRAKEN_FUNCTION(keypass='')
 
-# print(f'=== 1 ETH buy {toolkraken.get_return_buy_kraken(symbol="LTC", usd="ETH", amountin=1, proxy="", fake_ip=False)} LTC')
-# print(f'=== 1 ETH buy {toolkraken.get_return_buy_kraken_withETH(symbol="LTC", usd="ETH", amountin=1, proxy="", fake_ip=False)} LTC')
+# print(f'=== 1 ETH buy {toolkraken.get_return_buy_kraken(symbol="USD", usd="ETH", amountin=1, proxy="", fake_ip=False)} USD')
 # print(f'=== 1 LTC sell {toolkraken.get_return_sell_kraken(symbol="LTC", usd="USDT", amountin=1, proxy="", fake_ip=False)} USDT')
-# print(f'=== 1 LTC sell {toolkraken.get_return_sell_kraken_withETH(symbol="LTC", usd="USDT", amountin=1, proxy="", fake_ip=False)} ETH')
-
-# print(
-#     f'=== 1 LTC sell {toolkraken.get_best_return_buy_kraken_withETH(symbol="LTC", amountin=1, proxy="", fake_ip=False)}')
-# print(
-#     f'=== 1 LTC sell {toolkraken.get_best_return_sell_kraken_withETH(symbol="LTC", amountin=1, proxy="", fake_ip=False)}')
 
 # print(toolkraken.find_quantity_price_buy_kraken("ETH", 1, "USDT", "", "", 0.1))
 # print(toolkraken.find_quantity_price_sell_kraken("ETH", 1, "USDT", "", "", 0.1))
 
 # print(toolkraken.get_depth_kraken("ETH", "USDT", "", ""))
-print(toolkraken.real_buy_market_in_kraken("XXBTZ", "USD", 10, 0.0003, "", "", 0.5)) 
-# print(toolkraken.real_buy_market_ETH(10, 0.002, "", "", 0.5)) # not done
-# print(toolkraken.real_sell_in_kraken("LTC",
-#       "USDT", 1136518771, 0, "proxy", False, 5)) # not done
-# print(toolkraken.real_sell_market_in_kraken("LTC",
-#       "USDT", 1136518771, 0, "proxy", False, 5)) # not done
-
+# print(toolkraken.real_buy_in_kraken("XBT", "USD", 5, 0, "", "", 0.5))
+print(toolkraken.real_sell_in_kraken("FTM", "USDT", 10, 0, "proxy", False, 5)) # not done
 
 # print(toolkraken.get_deposit_address_kraken("XBT", "Bitcoin"))
 # print(toolkraken.get_status_deposit_kraken("XBT", "Bitcoin"))
@@ -754,4 +557,3 @@ print(toolkraken.real_buy_market_in_kraken("XXBTZ", "USD", 10, 0.0003, "", "", 0
 # print(toolkraken.transfer_kraken("USDT", "5", "Spot Wallet", "Futures Wallet"))
 # print(toolkraken.get_balances_kraken("USDT"))
 # print(toolkraken.submit_token_withdrawal_kraken("USDT")) # not done
-
