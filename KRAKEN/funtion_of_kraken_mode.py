@@ -74,25 +74,14 @@ class KRAKEN_FUNCTION:
                 nonce = int(time.time() * 1000)
                 res = self.FundingAPI.get_balances(nonce=nonce)
                 # print("res", res)
-                balance_funding = res['result'][asset]
-                break
-            except:
-                time.sleep(1)
-                continue
-        while True:
-            try:
-                nonce = int(time.time() * 1000)
-                res1 = self.AccountAPI.get_account(nonce=nonce, asset=asset)
-                # print("res1", res1)
-                balance_trading = res1['result']['tb']
+                balance = res['result'][asset]
                 break
             except:
                 time.sleep(1)
                 continue
 
         # print("balance_trading ", balance_trading)
-        balance = float(balance_funding)+float(balance_trading)
-        return self.convert_number_to_smaller(float(balance)), self.convert_number_to_smaller(float(balance_funding)), self.convert_number_to_smaller(float(balance_trading))
+        return self.convert_number_to_smaller(float(balance))
 
     # Lấy danh sách các lệnh đang được đặt trên sàn
     def get_depth_kraken(self, symbol, usd, proxy, fake_ip):
@@ -305,36 +294,38 @@ class KRAKEN_FUNCTION:
         Klin = int(amounin*10**4)/(10**4)
         print("khối lượng vào", Klin)
         try:
+            nonce = int(time.time() * 1000)
             result = self.TradeAPI.place_order(
-                instId=symbol1, tdMode='cash', side='sell', ordType='limit', sz=Klin, px=price)
+                nonce=nonce, ordertype='limit', pair=symbol, price=price, type_='sell', volume=Klin)
 
         except:
             print("Lỗi ", sys.exc_info())
-        print("result", result)
 
-        if result['data'][0]['sCode'] == '0':
-            order_id = result['data'][0]['ordId']
-            print("order_id", order_id)
+        if len(result['error']) == 0:
+            order_id = result['result']['txid'][0]
             print("Đã đặt lệnh thành công")
         else:
-            print("Lỗi sell rồi.....")
+            print("Lỗi rồi.....", result)
+            return result
 
-        print("order_id1", order_id)
+        print("order_id", order_id)
         for i in range(4):
-            order_details = self.TradeAPI.get_orders(symbol1, order_id)
+            nonce = int(time.time() * 1000)
+            order_details = self.TradeAPI.get_orders(nonce, order_id)
             print("get_order_details ", order_details)
-            deal_price = order_details['data'][0]['avgPx']
+            deal_price = order_details['result'][order_id]['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['data'][0]['accFillSz']
+            dealSize = order_details['result'][order_id]['vol']
             print("dealSize", dealSize)
-            status = order_details['data'][0]['state']
+            status = order_details['result'][order_id]['status']
             print("status", status)
-            if 'live' in status or 'partially_filled' in status:
+            if 'open' in status or 'partial' in status:
                 if i > 2:
                     print("Lệnh sell đang còn mở")
-                    result = self.TradeAPI.cancel_order(symbol1, order_id)
+                    nonce = int(time.time() * 1000)
+                    result = self.TradeAPI.cancel_order(nonce, order_id)
                     print("result_cancel_buy", result)
-                    if result['data'][0]['sCode'] == '0':
+                    if result['result']['count'] == '1':
                         print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
                         if deal_price == '0':
                             result = "KHÔNG BÁN ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!"
@@ -353,7 +344,7 @@ class KRAKEN_FUNCTION:
     # Tìm giá khơp lệnh cuối cùng và số tiền nhận được khi bán token
     def find_quantity_price_sell_kraken(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
         result = self.get_depth_kraken(symbol, token_usd, proxy, fake_ip)
-        print(f"get_depth_kraken {result}")
+        # print(f"get_depth_kraken {result}")
         try:
             list_bids = result['bids']
         except:
@@ -434,14 +425,14 @@ class KRAKEN_FUNCTION:
                 print("Mạng rút bình thường!!!")
                 limit = res['result']['limit']
                 fee = res['result']['fee']
-                return True, limit, fee
+                return fee
             else:
                 print("Tạm dừng rút tiền rồi ", token, key)
-                return False, 0, 0, 0, 0, 0
+                return 0
         except:
             err = str(sys.exc_info())
             print("Chain không khả dụng!!!" + err)
-            return "False1", 0, 0, 0, 0, 0
+            exit()
 
     # Lấy lịch sử nạp tiền
     def get_deposit_history_kraken(self, asset, method):
@@ -493,26 +484,16 @@ class KRAKEN_FUNCTION:
 
     # Hàm rút tiền từ kraken về  ví metamask
     def submit_token_withdrawal_kraken(self, asset, amount, address, chain):
-        balance, balance_funding, balance_trading = self.get_balances_kraken(
-            asset)
-        minfee, maxfee, wdTickSz = self.get_status_withdrawal_kraken(
-            token, chain)
-        list_fee_ruttien = [
-            float(minfee)*1.1, (float(minfee)*1.1 + float(maxfee))/2, float(maxfee)]
-        if float(balance) > 0 and float(balance) >= float(size):
-            if float(balance_funding) < float(size):
-                amout1 = int(float(size)*10**3)/(10**3)
-                res1 = self.transfer_kraken(asset, amout1, "18", "6")
+        balance = self.get_balances_kraken(asset)
+        fee = self.get_status_withdrawal_kraken(asset, chain, amount)
+        print(f"fee {fee} {type(fee)}")
+        list_fee_ruttien = [float(fee)]
+        if float(balance) > 0 and float(balance) >= float(amount):
             for fee_rutien in list_fee_ruttien:
                 try:
-                    if int(wdTickSz) > 3:
-                        wdTickSz = 3
-                    print("wdTickSz ", wdTickSz)
-                    size = int((float(size)-fee_rutien)*10 **
-                               int(wdTickSz))/(10**int(wdTickSz))
-                    print("size ", size)
-                    res = self.FundingAPI.coin_withdraw(
-                        token, size,  "4", address, chainID, str(fee_rutien))
+                    print("size ", amount)
+                    nonce = int(time.time() * 1000)
+                    res = self.FundingAPI.coin_withdraw(nonce, asset, address, amount)
                     print("submit_token_withdrawal_kraken ", res)
                     if res['code'] == '0':
 
@@ -547,7 +528,7 @@ toolkraken = KRAKEN_FUNCTION(keypass='')
 
 # print(toolkraken.get_depth_kraken("ETH", "USDT", "", ""))
 # print(toolkraken.real_buy_in_kraken("XBT", "USD", 5, 0, "", "", 0.5))
-print(toolkraken.real_sell_in_kraken("FTM", "USDT", 10, 0, "proxy", False, 5)) # not done
+# print(toolkraken.real_sell_in_kraken("FTM", "USD", 10, 0, "proxy", False, 5))
 
 # print(toolkraken.get_deposit_address_kraken("XBT", "Bitcoin"))
 # print(toolkraken.get_status_deposit_kraken("XBT", "Bitcoin"))
@@ -556,4 +537,4 @@ print(toolkraken.real_sell_in_kraken("FTM", "USDT", 10, 0, "proxy", False, 5)) #
 # print(toolkraken.get_withdraw_history_kraken())
 # print(toolkraken.transfer_kraken("USDT", "5", "Spot Wallet", "Futures Wallet"))
 # print(toolkraken.get_balances_kraken("USDT"))
-# print(toolkraken.submit_token_withdrawal_kraken("USDT")) # not done
+print(toolkraken.submit_token_withdrawal_kraken("FTM", 5, "metamaskARB", "Bitcoin")) # not done
