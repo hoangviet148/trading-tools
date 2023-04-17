@@ -483,11 +483,12 @@ class KRAKEN_FUNCTION:
         return status
 
     # Hàm rút tiền từ kraken về  ví metamask
-    def submit_token_withdrawal_kraken(self, asset, amount, address, chain):
+    def submit_token_withdrawal_kraken(self, asset, amount, address):
         balance = self.get_balances_kraken(asset)
-        fee = self.get_status_withdrawal_kraken(asset, chain, amount)
+        fee = self.get_status_withdrawal_kraken(asset, address, amount)
         print(f"fee {fee} {type(fee)}")
         list_fee_ruttien = [float(fee)]
+        status = ''
         if float(balance) > 0 and float(balance) >= float(amount):
             for fee_rutien in list_fee_ruttien:
                 try:
@@ -495,17 +496,15 @@ class KRAKEN_FUNCTION:
                     nonce = int(time.time() * 1000)
                     res = self.FundingAPI.coin_withdraw(nonce, asset, address, amount)
                     print("submit_token_withdrawal_kraken ", res)
-                    if res['code'] == '0':
-
-                        withdrawal_ID = res['data'][0]['wdId']
+                    if len(res['error']) == 0:
+                        withdrawal_ID = res['result']['refid']
                         print("withdrawal_ID", withdrawal_ID)
                         print("Đã rút tiền chờ tiền về tài khoản!")
                         status = "Đã rút tiền chờ tiền về tài khoản!"
                         return True, status, withdrawal_ID
                     else:
-                        print("Rút tiền thất bại! " +
-                              str(res['msg']) + "fee =" + str(fee_rutien))
-                        status = res['msg']
+                        print("Rút tiền thất bại! " + str(res['error']) + "fee =" + str(fee_rutien))
+                        status = res['error']
                         continue
                 except:
                     err = str(sys.exc_info())
@@ -532,9 +531,9 @@ toolkraken = KRAKEN_FUNCTION(keypass='')
 
 # print(toolkraken.get_deposit_address_kraken("XBT", "Bitcoin"))
 # print(toolkraken.get_status_deposit_kraken("XBT", "Bitcoin"))
-# print(toolkraken.get_status_withdrawal_kraken("USDT", "usdt-wd", 2))
+# print(toolkraken.get_status_withdrawal_kraken("FTM", "metamaskARB", 2))
 # print(toolkraken.get_deposit_history_kraken("USDT", "Tether USD (TRC20)"))
 # print(toolkraken.get_withdraw_history_kraken())
 # print(toolkraken.transfer_kraken("USDT", "5", "Spot Wallet", "Futures Wallet"))
 # print(toolkraken.get_balances_kraken("USDT"))
-print(toolkraken.submit_token_withdrawal_kraken("FTM", 5, "metamaskARB", "Bitcoin")) # not done
+print(toolkraken.submit_token_withdrawal_kraken("FTM", 1, "metamaskARB"))
