@@ -33,8 +33,8 @@ class KRAKEN_FUNCTION:
         if keypass != None:
 
             # NHẬP KEY, SECRET của API
-            self.api_key = 'ckLFiOjFcq/UQ4z1nnscsQ8Ejdq4bf7TtGJX7UXc4E123/sX8uGbQKc7'
-            self.api_secret = '/YVJ/6SqsczOy2pW8VstkNmyEv0jDajbia8Y5Mxmgzl9X/zcp50KD4W5wftOmMn44QjLb0Q0v2HMP2pbdeXCIw=='
+            self.api_key = 'FoPcc7arU8rybD2Q/rzLNdhskiMBSySO1E9HXjmLdJAKUxKTDAXjxD2V'
+            self.api_secret = 'kqwRBfN4djmE5iQmwbrpGOzptLK95hDatklPKVQGuOWk8UqCFuYEmxw1hGSweCNBrqaMhS93tygnToD+Hx0DMA=='
 
             self.FundingAPI = Funding.FundingAPI(
                 self.api_key, self.api_secret)
@@ -536,4 +536,5 @@ toolkraken = KRAKEN_FUNCTION(keypass='')
 # print(toolkraken.get_withdraw_history_kraken())
 # print(toolkraken.transfer_kraken("USDT", "5", "Spot Wallet", "Futures Wallet"))
 # print(toolkraken.get_balances_kraken("USDT"))
-print(toolkraken.submit_token_withdrawal_kraken("FTM", 1, "metamaskARB"))
+# print(toolkraken.submit_token_withdrawal_kraken("FTM", 1, "metamaskARB"))
+print(toolkraken.submit_token_withdrawal_kraken("USDT", 2.5, "USDT_ARB"))

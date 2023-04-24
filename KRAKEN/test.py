@@ -6,15 +6,14 @@ import hmac
 import base64
 import urllib.parse
 
-api_key = 'ckLFiOjFcq/UQ4z1nnscsQ8Ejdq4bf7TtGJX7UXc4E123/sX8uGbQKc7'
-api_secret = '/YVJ/6SqsczOy2pW8VstkNmyEv0jDajbia8Y5Mxmgzl9X/zcp50KD4W5wftOmMn44QjLb0Q0v2HMP2pbdeXCIw=='
-request_path = "/0/private/CancelOrder"
+api_key = 'FoPcc7arU8rybD2Q/rzLNdhskiMBSySO1E9HXjmLdJAKUxKTDAXjxD2V'
+api_secret = 'kqwRBfN4djmE5iQmwbrpGOzptLK95hDatklPKVQGuOWk8UqCFuYEmxw1hGSweCNBrqaMhS93tygnToD+Hx0DMA=='
+request_path = "/0/private/Balance"
 url = "https://api.kraken.com" + request_path
-nonce = int(time.time() * 1000)
+nonce = str(int(time.time() * 1000))
 
 data = {
-    "nonce": nonce,
-    "txid": "OPIBAX-QOKN7-3M4IG7"
+    "nonce": nonce
 }
 
 # Generate signature

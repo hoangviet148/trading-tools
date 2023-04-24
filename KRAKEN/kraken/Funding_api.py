@@ -19,7 +19,7 @@ class FundingAPI(Client):
 
     # Get Balance
     def get_balances(self, nonce=None):
-        params = {'nonce': nonce}
+        params = {'nonce': str(nonce)}
         return self._request_with_params(POST, GET_BALANCES, params)
 
     # Get Account Configuration
@@ -44,7 +44,7 @@ class FundingAPI(Client):
 
     # Get Withdrawal History
     def get_withdrawal_history(self, nonce=None):
-        params = {"nonce": nonce}
+        params = {"nonce": str(nonce)}
         return self._request_with_params(POST, WITHDRAWAL_HISTORIY, params)
 
     # def get_withdrawal_history(self, wdId):
