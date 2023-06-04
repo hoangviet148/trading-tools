@@ -33,8 +33,8 @@ class BKEX_FUNCTION:
         if keypass != None:
 
             # NHẬP KEY, SECRET của API
-            self.api_key = 'bc16321ecb6bc6066938624fbb60fa411fd5bd3530a75fc3cb2b590daee7f54a'
-            self.api_secret = '94f9e375e5c697bf2a79bda9d939c9f6744bcdf1b4ab4134cf21215d7fdc8a6c'
+            self.api_key = '0e6c4a52ca1fdc19bcbd05602800ca962e9ac56dbf6e0e550b0b194a429596d5'
+            self.api_secret = '98a649b9fd88a32683e53c20a35593773a47d763ebd31daa6a35bad1c2603dcd'
 
             self.FundingAPI = Funding.FundingAPI(
                 self.api_key, self.api_secret)
@@ -68,13 +68,15 @@ class BKEX_FUNCTION:
             (10**int(decimal_places))
         return number
 
-    def get_balances_bkex(self, asset):  # Check số dư của 1 token trên sàn
+    def get_balances_bkex(self, currencys):  # Check số dư của 1 token trên sàn
         while True:
             try:
-                nonce = int(time.time() * 1000)
-                res = self.FundingAPI.get_balances(nonce=nonce)
+                res = self.FundingAPI.get_balances(currencys=currencys)
                 # print("res", res)
-                balance = res['result'][asset]
+                if not res['data']:
+                    balance = 0
+                else:
+                    balance = res['data'][currencys]
                 break
             except:
                 time.sleep(1)
@@ -85,24 +87,28 @@ class BKEX_FUNCTION:
 
     # Lấy danh sách các lệnh đang được đặt trên sàn
     def get_depth_bkex(self, symbol, usd, proxy, fake_ip):
-        token = (symbol + usd).upper()
-        url = "https://api.bkex.com/0/public/Depth?pair=" + token + "&count=500"
+        token = (symbol + "_" + usd).upper()
+        states = 'submitted,partial-filled,filled'  # Order states to include
+        url = "https://api.bkex.com/v2/q/depth"
+        data = {
+            'symbol': token,
+            'states': states
+        }
         try:
             if fake_ip == True:
                 proxies = {
                     'http': str(proxy),
                     'https': str(proxy)
                 }
-                res = requests.get(url, proxies=proxies, timeout=5)
+                res = requests.get(url, data=data, proxies=proxies, timeout=5)
             else:
-                res = requests.get(url, timeout=5).json()
+                res = requests.get(url, data=data, timeout=5).json()
 
-            if res['result'] == False:
+            # print(f"=== {res} ===")
+            if res['status'] != 0:
                 return 0
             else:
-                first_item, *rest = res['result']
-                # print(res['result'][first_item])
-                return res['result'][first_item]
+                return res['data']
         except Exception as e:
             print("Exception", e)
             return 0
@@ -110,9 +116,10 @@ class BKEX_FUNCTION:
     # Kiểm tra nếu dùng 1 số usd thì mua được bao nhiêu đồng coin
     def get_return_buy_bkex(self, symbol, usd, amountin, proxy, fake_ip):
         result = self.get_depth_bkex(symbol, usd, proxy, fake_ip)
+        # print("result ", result)
         try:
-            list_asks = result['asks']
-            # print("list_asks ", list_asks)
+            list_asks = result['ask']
+            print("list_asks ", list_asks)
         except:
             return 0
         sum_value_ask = 0
@@ -137,7 +144,7 @@ class BKEX_FUNCTION:
     def get_return_sell_bkex(self, symbol, usd, amountin, proxy, fake_ip):
         result = self.get_depth_bkex(symbol, usd, proxy, fake_ip)
         try:
-            list_bids = result['bids']
+            list_bids = result['bid']
         except:
             return 0
         sum_value_bids = 0
@@ -164,7 +171,7 @@ class BKEX_FUNCTION:
         result = self.get_depth_bkex(symbol, token_usd, proxy, fake_ip)
         # print(result)
         try:
-            list_asks = result['asks']
+            list_asks = result['ask']
         except:
             return 0
         # print(list_bids)
@@ -346,7 +353,7 @@ class BKEX_FUNCTION:
         result = self.get_depth_bkex(symbol, token_usd, proxy, fake_ip)
         # print(f"get_depth_bkex {result}")
         try:
-            list_bids = result['bids']
+            list_bids = result['bid']
         except:
             return 0
         sum_value_bids = 0
@@ -380,20 +387,21 @@ class BKEX_FUNCTION:
             return price_find, sum_value_bids * (100-0.26)/100
 
     # Lấy địa chỉ nạp tiền lên bkex
-    def get_deposit_address_bkex(self, symbol, chain):
-        symbol = symbol.upper()
-        nonce = int(time.time() * 1000)
+    def get_deposit_address_bkex(self, currency):
+        currency = currency.upper()
         try:
-            res = self.FundingAPI.get_deposit_address(
-                nonce=nonce, asset=symbol, method=chain)
-            print(f"res: {res['result'][0]['address']}")
-            if len(res['error']) == 0:
-                return res['result'][0]['address']
+            res = self.FundingAPI.get_deposit_address(currency=currency)
+            print(f"res: {res['data']}")
+            if res['status'] == 0:
+                if len(res['data']) != 0:
+                    return res['data'][chain]
+                else:
+                    return ["No address avaiable"]
         except:
             err = str(sys.exc_info())
             print("err", err)
             print("Kiểm tra lại Chain đi người đẹp!")
-            return 0, 0
+            return ["No address avaiable"]
 
     # Lấy trạng thái khả dụng hay bị dừng nạp tiền của 1 token
     def get_status_deposit_bkex(self, symbol, chain):
@@ -519,22 +527,22 @@ class BKEX_FUNCTION:
 
 toolbkex = BKEX_FUNCTION(keypass='')
 
-# print(f'=== 1 ETH buy {toolbkex.get_return_buy_bkex(symbol="USD", usd="ETH", amountin=1, proxy="", fake_ip=False)} USD')
-# print(f'=== 1 LTC sell {toolbkex.get_return_sell_bkex(symbol="LTC", usd="USDT", amountin=1, proxy="", fake_ip=False)} USDT')
+# print(f'=== {toolbkex.get_return_buy_bkex(symbol="BTC", usd="USDT", amountin=1, proxy="", fake_ip=False)}')
+# print(f'=== 1 LTC sell {toolbkex.get_return_sell_bkex(symbol="ETH", usd="USDT", amountin=1, proxy="", fake_ip=False)} USDT')
 
 # print(toolbkex.find_quantity_price_buy_bkex("ETH", 1, "USDT", "", "", 0.1))
 # print(toolbkex.find_quantity_price_sell_bkex("ETH", 1, "USDT", "", "", 0.1))
+# print(toolbkex.get_depth_bkex("BTC", "USDT", "", ""))
 
-# print(toolbkex.get_depth_bkex("ETH", "USDT", "", ""))
-# print(toolbkex.real_buy_in_bkex("XBT", "USD", 5, 0, "", "", 0.5))
-# print(toolbkex.real_sell_in_bkex("FTM", "USD", 10, 0, "proxy", False, 5))
+# print(toolbkex.real_buy_in_bkex("XBT", "USD", 5, 0, "", "", 0.5)) # no
+# print(toolbkex.real_sell_in_bkex("FTM", "USD", 10, 0, "proxy", False, 5)) # no
 
-# print(toolbkex.get_deposit_address_bkex("XBT", "Bitcoin"))
-# print(toolbkex.get_status_deposit_bkex("XBT", "Bitcoin"))
-# print(toolbkex.get_status_withdrawal_bkex("FTM", "metamaskARB", 2))
-# print(toolbkex.get_deposit_history_bkex("USDT", "Tether USD (TRC20)"))
-# print(toolbkex.get_withdraw_history_bkex())
-# print(toolbkex.transfer_bkex("USDT", "5", "Spot Wallet", "Futures Wallet"))
-print(toolbkex.get_balances_bkex("USDT"))
-# print(toolbkex.submit_token_withdrawal_bkex("FTM", 1, "metamaskARB"))
-# print(toolbkex.submit_token_withdrawal_bkex("USDT", 2.5, "USDT_ARB"))
+print(toolbkex.get_deposit_address_bkex("ETH")) # no
+# print(toolbkex.get_status_deposit_bkex("XBT", "Bitcoin")) # no
+# print(toolbkex.get_status_withdrawal_bkex("FTM", "metamaskARB", 2)) # no
+# print(toolbkex.get_deposit_history_bkex("USDT", "Tether USD (TRC20)")) # no
+# print(toolbkex.get_withdraw_history_bkex()) # no
+# print(toolbkex.transfer_bkex("USDT", "5", "Spot Wallet", "Futures Wallet")) # no
+# print(toolbkex.get_balances_bkex("ETH")) # no
+# print(toolbkex.submit_token_withdrawal_bkex("FTM", 1, "metamaskARB")) # no
+# print(toolbkex.submit_token_withdrawal_bkex("USDT", 2.5, "USDT_ARB")) # no

@@ -1,35 +1,44 @@
 import requests
 import json
 import time
-import hashlib
+from hashlib import sha256
 import hmac
 import base64
-import urllib.parse
+from urllib import parse
 
-api_key = 'FoPcc7arU8rybD2Q/rzLNdhskiMBSySO1E9HXjmLdJAKUxKTDAXjxD2V'
-api_secret = 'kqwRBfN4djmE5iQmwbrpGOzptLK95hDatklPKVQGuOWk8UqCFuYEmxw1hGSweCNBrqaMhS93tygnToD+Hx0DMA=='
-request_path = "/0/private/Balance"
-url = "https://api.kraken.com" + request_path
-nonce = str(int(time.time() * 1000))
+api_key = '0e6c4a52ca1fdc19bcbd05602800ca962e9ac56dbf6e0e550b0b194a429596d5'
+api_secret = '98a649b9fd88a32683e53c20a35593773a47d763ebd31daa6a35bad1c2603dcd'
+request_path = "/v2/u/account/balance"
+url = "https://api.bkex.com" + request_path
+
+def get_sign(url):
+    params_arr = url.split("?")
+    source = ""
+    if len(params_arr) > 1:
+        param = params_arr[1]
+        unsorted_arr = param.split("&")
+        source = "&".join(sorted(unsorted_arr))
+        print(source)
+    sign = hmac.new(bytes(api_secret, encoding='utf-8'), bytes(source, encoding='utf-8'), sha256).hexdigest()
+    print("sign: " + sign)
+    return sign
 
 data = {
-    "nonce": nonce
+    "currencys": "ETH"
 }
-
-# Generate signature
-postdata = urllib.parse.urlencode(data)
-encoded = (str(nonce) + postdata).encode()
-message = request_path.encode() + hashlib.sha256(encoded).digest()
-
-mac = hmac.new(base64.b64decode(api_secret), message, hashlib.sha512)
-sigdigest = base64.b64encode(mac.digest())
-signature = sigdigest.decode()
+url = url + "?" + parse.urlencode(data)
+print(url)
+signature = get_sign(url)
 
 header = {
     'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8', 
-    'API-Key': api_key, 
-    'API-Sign': signature
+    'X_ACCESS_KEY': api_key, 
+    'X_SIGNATURE': signature
 }
 
-response = requests.post(url, headers=header, data=data)
+
+
+response = requests.get(url, headers=header, data=data)
+# response = requests.post(url, headers=header, data=data)
 print(f"response === {response.json()} - {response.status_code}")
+

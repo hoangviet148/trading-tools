@@ -7,18 +7,33 @@ class FundingAPI(Client):
     def __init__(self, api_key, api_secret_key):
         Client.__init__(self, api_key, api_secret_key)
 
-    # Get Deposit Address
-    def get_deposit_address(self, currency):
-        print(f"alooo {currency}")
+
+    # Get Deposit mothod token:
+    def get_deposit_method_token(self, nonce=None, token=None, proxy="",fake_ip=False):
+        url_path="/0/private/DepositMethods"
         params = {
-            "currency": currency
+            "nonce": nonce,
+            "asset": token,
         }
-        return self._request_with_params(GET, DEPOSIT_ADDRESS, params)
+        return self._request_with_params(POST, url_path, params, proxy , fake_ip )
+
+
+    # Get Deposit Address
+    def get_deposit_address(self, nonce=None, asset=None, method=None, proxy="",fake_ip=False):
+        
+        url_path="/0/private/DepositAddresses"
+        params = {
+            "nonce": nonce,
+            "asset": asset,
+            "method": method,
+            #"new": True
+        }
+        return self._request_with_params(POST, url_path, params, proxy , fake_ip)
 
     # Get Balance
-    def get_balances(self, currencys=None):
-        params = {'currencys': currencys}
-        return self._request_with_params(GET, GET_BALANCES, params)
+    def get_balances(self, nonce=None, proxy="",fake_ip=False):
+        params = {'nonce': str(nonce)}
+        return self._request_with_params(POST, GET_BALANCES, params, proxy , fake_ip)
 
     # Get Account Configuration
     def funds_transfer(self, nonce, asset, amount, From, to):
@@ -27,9 +42,9 @@ class FundingAPI(Client):
 
     # Withdrawal
 
-    def coin_withdraw(self, nonce, asset, key, amount):
+    def coin_withdraw(self, nonce, asset, key, amount, proxy="",fake_ip=False ):
         params = {'nonce': nonce, 'asset': asset, 'key': key, 'amount': amount}
-        return self._request_with_params(POST, WITHDRAWAL_COIN, params)
+        return self._request_with_params(POST, WITHDRAWAL_COIN, params, proxy , fake_ip)
 
     # Get Deposit History
     def get_deposit_history(self, nonce=None, asset=None, method=None):

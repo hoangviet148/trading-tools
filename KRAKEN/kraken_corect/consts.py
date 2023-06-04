@@ -1,9 +1,9 @@
 # http header
-API_URL = 'https://api.bkex.com'
+API_URL = 'https://api.kraken.com'
 
 CONTENT_TYPE = 'Content-Type'
-ACCESS_KEY = 'X_ACCESS_KEY'
-ACCESS_SIGN = 'X_SIGNATURE'
+ACCESS_KEY = 'API-Key'
+ACCESS_SIGN = 'API-Sign'
 
 ACEEPT = 'Accept'
 COOKIE = 'Cookie'
@@ -37,9 +37,9 @@ SET_GREEKS = '/api/v5/account/set-greeks'
 MAX_WITHDRAWAL = '/api/v5/account/max-withdrawal'
 
 # funding
-DEPOSIT_ADDRESS = '/v2/u/wallet/address'
+DEPOSIT_ADDRESS = '/0/private/DepositAddresses'
 WITHDRAWAL_INFO = '/0/private/WithdrawInfo'
-GET_BALANCES = '/v2/u/account/balance'
+GET_BALANCES = '/0/private/Balance'
 FUNDS_TRANSFER = '/0/private/WalletTransfer'
 WITHDRAWAL_COIN = '/0/private/Withdraw'
 DEPOSIT_HISTORIY = '/0/private/DepositStatus'
