@@ -27,6 +27,7 @@ path_file = os.path.dirname(os.path.abspath(__file__))
 
 flag = '0'
 
+
 class BKEX_FUNCTION:
     def __init__(self, keypass=None):
         print("Init")
@@ -173,7 +174,7 @@ class BKEX_FUNCTION:
         try:
             list_asks = result['ask']
         except:
-            return 0
+            return 0, 0
         # print(list_bids)
         # print(list_asks)
         sum_value_ask = 0
@@ -209,9 +210,8 @@ class BKEX_FUNCTION:
     # lệnh buy cần tính chuẩn với khối lượng 1000 usdt mua
     # Hàm mua theo limit
     def real_buy_in_bkex(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
-        symbol = token_name + token_usd
-        price, quantity = self.find_quantity_price_buy_bkex(
-            symbol=token_name, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
+        symbol = token_name + "_" + token_usd
+        price, quantity = self.find_quantity_price_buy_bkex(symbol=token_name, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
         print("price", price)
         print("quantity", quantity)
         if quantity == 0:
@@ -228,16 +228,15 @@ class BKEX_FUNCTION:
         Klin = int(quantity*10**4)/(10**4)
         print("Klin ", Klin)
         print("price ", price)
-        nonce = int(time.time() * 1000)
         try:
             result = self.TradeAPI.place_order(
-                nonce=nonce, ordertype='limit', pair=symbol, price=price, type_='buy', volume=Klin)
+                type_='LIMIT', symbol=symbol, price=price, direction="ASK", volume=Klin)
             print("result", result)
         except:
             print("Lỗi ", sys.exc_info())
 
-        if len(result['error']) == 0:
-            order_id = result['result']['txid'][0]
+        if result['code'] == 0:
+            order_id = result['data']
             print("Đã đặt lệnh thành công")
         else:
             print("Lỗi rồi.....", result)
@@ -386,15 +385,60 @@ class BKEX_FUNCTION:
         if float(total_volume) < float(amountin):
             return price_find, sum_value_bids * (100-0.26)/100
 
+    def get_chain_token(self, aset, proxy="", fake_ip=False):
+        nonce = str(int(time.time() * 1000))
+        res = self.FundingAPI.get_deposit_method_token(
+            nonce=nonce, token=aset, proxy=proxy, fake_ip=fake_ip)
+        print("res", res)
+        data = res['result']
+        list_chain = []
+        for add in data:
+            print(add)
+            chain = add["method"]
+            if chain not in list_chain:
+                print("chain", chain)
+                list_chain.append(chain)
+                print("................")
+        return list_chain
+
     # Lấy địa chỉ nạp tiền lên bkex
-    def get_deposit_address_bkex(self, currency):
+    def get_deposit_address_bkex(self, currency, chain):
         currency = currency.upper()
+        if chain == "Polygon":
+            chainID = "Polygon"
+        elif chain == "OPT":
+            chainID = "Optimism"
+        elif chain == "BSC":
+            chainID = "BEP"
+        elif chain == "TRON":
+            if "USD" not in symbol.upper():
+                chainID = "Tron"
+            else:
+                chainID = "TRC20"
+        elif chain == "AVAX":
+            chainID = "Avalanche C-Chain"
+        elif chain == "ETH":
+            chainID = "ERC20"
+        elif chain == "FTM":
+            chainID = "Fantom"
+        elif chain == "SOL":
+            if "USD" not in symbol.upper():
+                chainID = "Solana"
+            else:
+                chainID = "SPL"
+        elif chain == "KLAY":
+            chainID = "Klaytn"
+        elif chain == "ARB":
+            chainID = "Arbitrum"
+        else:
+            chainID = chain
+        print("chainID", chainID)
         try:
             res = self.FundingAPI.get_deposit_address(currency=currency)
             print(f"res: {res['data']}")
             if res['status'] == 0:
                 if len(res['data']) != 0:
-                    return res['data'][chain]
+                    return res['data'][chainID]
                 else:
                     return ["No address avaiable"]
         except:
@@ -404,91 +448,88 @@ class BKEX_FUNCTION:
             return ["No address avaiable"]
 
     # Lấy trạng thái khả dụng hay bị dừng nạp tiền của 1 token
-    def get_status_deposit_bkex(self, symbol, chain):
-        symbol = symbol.upper()
+    def get_status_deposit_bkex(self, currency):
+        currency = currency.upper()
         try:
             res = self.FundingAPI.get_currency()
-            for data in res['result']:
-                if symbol in data:
-                    if res['result'][data]['status'] != 'enabled':
-                        print("Tạm dừng nạp tiền rồi ", symbol, chain)
-                        return 0, 0, 0
+            for item in res['data']:
+                if currency == item['currency']:
+                    # print(item['supportDeposit'])
+                    if item['supportDeposit'] != True:
+                        print("Tạm dừng nạp tiền rồi. Token ", currency)
+                        return None
                     else:
-                        add = self.get_deposit_address_bkex(
-                            symbol, chain)
-                        print("Đã lấy được địa chỉ nạp tiền!!!", symbol, chain)
-                        return add
+                        return "Nạp tiền bình thường. Token " + str(currency)
         except Exception as e:
             print(f"lỗi request {e}")
 
     # Lấy trạng thái khả dụng hay bị dừng rút tiền
     def get_status_withdrawal_bkex(self, symbol, key, amount):
-        nonce = int(time.time() * 1000)
+        currency = currency.upper()
         try:
-            res = self.FundingAPI.get_withdrawal_info(
-                nonce=nonce, asset=symbol, key=key, amount=amount)
-            print(f"res {res}")
-
-            if len(res['error']) == 0:
-                print("Mạng rút bình thường!!!")
-                limit = res['result']['limit']
-                fee = res['result']['fee']
-                return fee
-            else:
-                print("Tạm dừng rút tiền rồi ", token, key)
-                return 0
-        except:
-            err = str(sys.exc_info())
-            print("Chain không khả dụng!!!" + err)
-            exit()
+            res = self.FundingAPI.get_currency()
+            for item in res['data']:
+                if currency == item['currency']:
+                    # print(item['supportWithdraw'])
+                    status = item['supportWithdraw']
+                    if status != True:
+                        print("Tạm dừng rút tiền rồi ", currency)
+                        return None
+                    else:
+                        maxWithdrawSingle = item['maxWithdrawSingle']
+                        minWithdrawSingle = item['minWithdrawSingle']
+                        return status, maxWithdrawSingle, minWithdrawSingle
+        except Exception as e:
+            print(f"lỗi request {e}")
 
     # Lấy lịch sử nạp tiền
-    def get_deposit_history_bkex(self, asset, method):
-        nonce = int(time.time() * 1000)
-        res = self.FundingAPI.get_deposit_history(
-            nonce=nonce, asset=asset, method=method)
-        status = []
-        if len(res['error']) == 0:
-            for res_dep in res['result']:
-                status.append(res_dep['status'])
+    def get_deposit_history_bkex(self, currency, id):
+        res = self.FundingAPI.get_deposit_history(currency=currency)
+        print("res", res)
+        if res['code'] == 0:
+            for res_dep in res['data']['data']:
+                if str(id).lower() in res_dep['id'].lower():
+                    status = res_dep['state']
+                    print("state", state)
+                    if state == -1:
+                        print("Failure " + str(currency))
+                        sta = "Failure.Token: " + str(currency)
+                    elif state == 0:
+                        print("Acknowledged " + str(currency))
+                        sta = "Acknowledged " + str(currency)
+                    elif state == 3:
+                        print("Confirmation in progress " + str(currency))
+                        sta = "Confirmation in progress " + str(currency)
+                        break
+                return sta
         else:
-            print(res['error'])
-        return status
+            print("Lỗi get status deposit Kraken")
+            return "Lỗi get status deposit Kraken"
 
-    def get_withdraw_history_bkex(self):  # Lấy lịch sử rút tiền
-        nonce = int(time.time() * 1000)
-        status = []
+    def get_withdraw_history_bkex(self, wd_id):  # Lấy lịch sử rút tiền
         try:
-            res = self.FundingAPI.get_withdrawal_history(nonce=nonce)
-            if len(res['result']) == 0:
-                return ["No recent withdraw transaction!"]
-            for res_wd in res['result']:
-                if res_wd['status'] == 'canceled':
-                    status.append("canceled" + str(symbol))
-                elif res_wd['status'] == 'Pending':
-                    status.append("Pending" + str(symbol))
+            res = self.FundingAPI.get_withdrawal_history()
+            if res['code'] == 0:
+                if res['data']['total'] == 0:
+                    return ["Không có giao dịch rút tiền gần đây!"]
+            for res_wd in res['data']['data']:
+                if str(wd_id).lower() in str(res_wd['id']).lower():
+                    state = res_wd['state']
+                    print("state", state)
+                    if res_wd['state'] == -1:
+                        sta = "Failure"
+                    elif res_wd['state'] == 0:
+                        sta = "Acknowledged"
+                    elif res_wd['state'] == 1:
+                        sta = "Submitted"
+                    elif res_wd['state'] == 2:
+                        sta = "Cancelled"
+                    elif res_wd['state'] == 5:
+                        sta = "Awaiting confirmation"
         except:
-            print("Lỗi lấy data" + str(sys.exc_info()))
-            status.append("Lỗi " + str(sys.exc_info()))
-        return status
-
-    # Chuyển tiền trong nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
-    def transfer_bkex(self, asset, amount, From, to):
-        nonce = int(time.time() * 1000)
-        try:
-            res = self.FundingAPI.funds_transfer(
-                nonce, asset, amount, From, to)
-            # break
-        except:
-            print("Lỗi transfer main to trading_bkex ", str(sys.exc_info()))
-            return "Lỗi transfer main to trading_bkex " + str(sys.exc_info())
-        if len(res['error']) == '0':
-            print("chuyển tiền thành công")
-            status = "chuyển tiền thành công"
-        else:
-            print("Lỗi chuyển tiền bkex " + str(res))
-            status = "Lỗi chuyển tiền bkex" + str(res)
-        return status
+            print("Lỗi request WD history Kraken " + str(sys.exc_info()))
+            sta = "Lỗi request WD history Kraken"
+        return sta
 
     # Hàm rút tiền từ bkex về  ví metamask
     def submit_token_withdrawal_bkex(self, asset, amount, address):
@@ -502,7 +543,8 @@ class BKEX_FUNCTION:
                 try:
                     print("size ", amount)
                     nonce = int(time.time() * 1000)
-                    res = self.FundingAPI.coin_withdraw(nonce, asset, address, amount)
+                    res = self.FundingAPI.coin_withdraw(
+                        nonce, asset, address, amount)
                     print("submit_token_withdrawal_bkex ", res)
                     if len(res['error']) == 0:
                         withdrawal_ID = res['result']['refid']
@@ -511,7 +553,8 @@ class BKEX_FUNCTION:
                         status = "Đã rút tiền chờ tiền về tài khoản!"
                         return True, status, withdrawal_ID
                     else:
-                        print("Rút tiền thất bại! " + str(res['error']) + "fee =" + str(fee_rutien))
+                        print("Rút tiền thất bại! " +
+                              str(res['error']) + "fee =" + str(fee_rutien))
                         status = res['error']
                         continue
                 except:
@@ -534,15 +577,14 @@ toolbkex = BKEX_FUNCTION(keypass='')
 # print(toolbkex.find_quantity_price_sell_bkex("ETH", 1, "USDT", "", "", 0.1))
 # print(toolbkex.get_depth_bkex("BTC", "USDT", "", ""))
 
-# print(toolbkex.real_buy_in_bkex("XBT", "USD", 5, 0, "", "", 0.5)) # no
+print(toolbkex.real_buy_in_bkex("BTC", "USDT", 5, 0, "", "", 0.5)) # no
 # print(toolbkex.real_sell_in_bkex("FTM", "USD", 10, 0, "proxy", False, 5)) # no
 
-print(toolbkex.get_deposit_address_bkex("ETH")) # no
-# print(toolbkex.get_status_deposit_bkex("XBT", "Bitcoin")) # no
+# print(toolbkex.get_deposit_address_bkex("ETH", "FTM"))  # no
+# print(toolbkex.get_status_deposit_bkex("BTC")) # no
 # print(toolbkex.get_status_withdrawal_bkex("FTM", "metamaskARB", 2)) # no
-# print(toolbkex.get_deposit_history_bkex("USDT", "Tether USD (TRC20)")) # no
-# print(toolbkex.get_withdraw_history_bkex()) # no
-# print(toolbkex.transfer_bkex("USDT", "5", "Spot Wallet", "Futures Wallet")) # no
+# print(toolbkex.get_deposit_history_bkex("USDT", "1"))  # no
+# print(toolbkex.get_withdraw_history_bkex("1"))  # no
 # print(toolbkex.get_balances_bkex("ETH")) # no
 # print(toolbkex.submit_token_withdrawal_bkex("FTM", 1, "metamaskARB")) # no
 # print(toolbkex.submit_token_withdrawal_bkex("USDT", 2.5, "USDT_ARB")) # no

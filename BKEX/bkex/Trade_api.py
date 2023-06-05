@@ -9,14 +9,13 @@ class TradeAPI(Client):
         Client.__init__(self, api_key, api_secret_key)
 
     # Place Order
-    def place_order(self, nonce=None, ordertype=None, pair=None, price=None, type_=None, volume=None):
+    def place_order(self, direction, symbol, price, type_, volume):
         params = {
-            "nonce": nonce,
-            "ordertype": ordertype,
-            "pair": pair,
-            "price": str(price),
+            "direction": direction,
+            "symbol": symbol,
+            "price": price,
             "type": type_,
-            "volume": str(volume)
+            "volume": volume
         }
 
         return self._request_with_params(POST, PLACE_ORDER, params)

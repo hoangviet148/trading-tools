@@ -32,18 +32,18 @@ class FundingAPI(Client):
         return self._request_with_params(POST, WITHDRAWAL_COIN, params)
 
     # Get Deposit History
-    def get_deposit_history(self, nonce=None, asset=None, method=None):
-        params = {"nonce": nonce, "asset": asset, "method": method}
-        return self._request_with_params(POST, DEPOSIT_HISTORIY, params)
+    def get_deposit_history(self, currency=None):
+        params = {"currency": currency}
+        return self._request_with_params(GET, DEPOSIT_HISTORIY, params)
 
     # def get_deposit_history(self, txId):
     #     params = {'txId': txId, 'limit': 50}
     #     return self._request_with_params(GET, DEPOSIT_HISTORIY, params)
 
     # Get Withdrawal History
-    def get_withdrawal_history(self, nonce=None):
-        params = {"nonce": str(nonce)}
-        return self._request_with_params(POST, WITHDRAWAL_HISTORIY, params)
+    def get_withdrawal_history(self):
+        params = {}
+        return self._request_with_params(GET, WITHDRAWAL_HISTORIY, params)
 
     # def get_withdrawal_history(self, wdId):
     #     params = {'wdId': wdId}
