@@ -25,8 +25,8 @@ class TradeAPI(Client):
         return self._request_with_params(POST, BATCH_ORDERS, orders_data)
 
     # Cancel Order
-    def cancel_order(self, nonce=None, txid=None):
-        params = {'nonce': nonce, 'txid': txid}
+    def cancel_order(self, order_id=None):
+        params = {'orderId': order_id}
         return self._request_with_params(POST, CANAEL_ORDER, params)
 
     # Cancel Multiple Orders
@@ -51,9 +51,9 @@ class TradeAPI(Client):
         return self._request_with_params(POST, CLOSE_POSITION, params)
 
     # Get Order Details
-    def get_orders(self, nonce=None, txid=None):
-        params = {'nonce': nonce, 'txid': txid}
-        return self._request_with_params(POST, ORDER_INFO, params)
+    def get_orders(self, symbol=None):
+        params = {'symbol': symbol}
+        return self._request_with_params(GET, ORDER_INFO, params)
 
     # Get Order List
     def get_order_list(self, instType=None, uly=None, instId=None, ordType=None, state=None, after=None, before=None, limit=None):

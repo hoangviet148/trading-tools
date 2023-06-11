@@ -243,23 +243,25 @@ class BKEX_FUNCTION:
             return result
 
         print("order_id", order_id)
+        order_details = None
         for i in range(4):
-            nonce = int(time.time() * 1000)
-            order_details = self.TradeAPI.get_orders(nonce, order_id)
+            response = self.TradeAPI.get_orders(symbol)
+            for item in response['data']:
+                if item['id'] == order_id:
+                    order_details = item
             print("get_order_details ", order_details)
-            deal_price = order_details['result'][order_id]['price']
+            deal_price = order_details['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['result'][order_id]['vol']
+            dealSize = order_details['dealVolume']
             print("dealSize", dealSize)
-            status = order_details['result'][order_id]['status']
+            status = order_details['status']
             print("status", status)
-            if 'open' in status or 'partial' in status:
+            if 'Pending orders' in status or 'Partially filled' in status:
                 if i > 2:
                     print("Lệnh đang buy market còn mở")
-                    nonce = int(time.time() * 1000)
-                    result = self.TradeAPI.cancel_order(nonce, order_id)
+                    result = self.TradeAPI.cancel_order(order_id)
                     print("result_cancel_buy", result)
-                    if result['result']['count'] == '1':
+                    if result['code'] == '0':
                         print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
                         if deal_price == '0':
                             result = "KHÔNG MUA ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!"
@@ -279,7 +281,7 @@ class BKEX_FUNCTION:
 
     # Hàm bán token theo limit
     def real_sell_in_bkex(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
-        symbol = token_name + token_usd
+        symbol = token_name + '_' + token_usd
 
         price, quantity = self.find_quantity_price_sell_bkex(
             symbol=token_name, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
@@ -300,38 +302,38 @@ class BKEX_FUNCTION:
         Klin = int(amounin*10**4)/(10**4)
         print("khối lượng vào", Klin)
         try:
-            nonce = int(time.time() * 1000)
             result = self.TradeAPI.place_order(
-                nonce=nonce, ordertype='limit', pair=symbol, price=price, type_='sell', volume=Klin)
-
+                type_='LIMIT', symbol=symbol, price=price, direction="BID", volume=Klin)
         except:
             print("Lỗi ", sys.exc_info())
 
-        if len(result['error']) == 0:
-            order_id = result['result']['txid'][0]
+        if result['code'] == '0':
+            order_id = result['data']
             print("Đã đặt lệnh thành công")
         else:
             print("Lỗi rồi.....", result)
             return result
 
         print("order_id", order_id)
+        order_details = None
         for i in range(4):
-            nonce = int(time.time() * 1000)
-            order_details = self.TradeAPI.get_orders(nonce, order_id)
+            response = self.TradeAPI.get_orders(symbol)
+            for item in response['data']:
+                if item['id'] == order_id:
+                    order_details = item
             print("get_order_details ", order_details)
-            deal_price = order_details['result'][order_id]['price']
+            deal_price = order_details['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['result'][order_id]['vol']
+            dealSize = order_details['dealVolume']
             print("dealSize", dealSize)
-            status = order_details['result'][order_id]['status']
+            status = order_details['status']
             print("status", status)
-            if 'open' in status or 'partial' in status:
+            if 'Pending orders' in status or 'Partially filled' in status:
                 if i > 2:
                     print("Lệnh sell đang còn mở")
-                    nonce = int(time.time() * 1000)
-                    result = self.TradeAPI.cancel_order(nonce, order_id)
+                    result = self.TradeAPI.cancel_order(order_id)
                     print("result_cancel_buy", result)
-                    if result['result']['count'] == '1':
+                    if result['code'] == '0':
                         print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
                         if deal_price == '0':
                             result = "KHÔNG BÁN ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!"
@@ -577,8 +579,8 @@ toolbkex = BKEX_FUNCTION(keypass='')
 # print(toolbkex.find_quantity_price_sell_bkex("ETH", 1, "USDT", "", "", 0.1))
 # print(toolbkex.get_depth_bkex("BTC", "USDT", "", ""))
 
-print(toolbkex.real_buy_in_bkex("BTC", "USDT", 5, 0, "", "", 0.5)) # no
-# print(toolbkex.real_sell_in_bkex("FTM", "USD", 10, 0, "proxy", False, 5)) # no
+# print(toolbkex.real_buy_in_bkex("BTC", "USDT", 5, 0, "", "", 0.5)) # no
+# print(toolbkex.real_sell_in_bkex("BTC", "USDT", 10, 0, "proxy", False, 5)) # no
 
 # print(toolbkex.get_deposit_address_bkex("ETH", "FTM"))  # no
 # print(toolbkex.get_status_deposit_bkex("BTC")) # no
@@ -587,4 +589,4 @@ print(toolbkex.real_buy_in_bkex("BTC", "USDT", 5, 0, "", "", 0.5)) # no
 # print(toolbkex.get_withdraw_history_bkex("1"))  # no
 # print(toolbkex.get_balances_bkex("ETH")) # no
 # print(toolbkex.submit_token_withdrawal_bkex("FTM", 1, "metamaskARB")) # no
-# print(toolbkex.submit_token_withdrawal_bkex("USDT", 2.5, "USDT_ARB")) # no
+print(toolbkex.submit_token_withdrawal_bkex("USDT", 2.5, "USDT_ARB")) # no
