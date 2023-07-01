@@ -9,15 +9,13 @@ class FundingAPI(Client):
 
     # Get Deposit Address
     def get_deposit_address(self, currency):
-        print(f"alooo {currency}")
         params = {
-            "currency": currency
-        }
+            "currency": currency        }
         return self._request_with_params(GET, DEPOSIT_ADDRESS, params)
 
     # Get Balance
-    def get_balances(self, currencys=None):
-        params = {'currencys': currencys}
+    def get_balances(self, currency):
+        params = {'currency': currency}
         return self._request_with_params(GET, GET_BALANCES, params)
 
     # Get Account Configuration
@@ -32,18 +30,25 @@ class FundingAPI(Client):
         return self._request_with_params(POST, WITHDRAWAL_COIN, params)
 
     # Get Deposit History
-    def get_deposit_history(self, currency=None):
-        params = {"currency": currency}
-        return self._request_with_params(GET, DEPOSIT_HISTORIY, params)
+    def get_deposit_history(self, currency, operation_type, N):
+        params = {
+            "currency": currency,
+            "operation_type": operation_type,
+            "N": N
+        }
+        return self._request_with_params(GET, DEPOSIT_WITHDRAW_HISTORIY, params)
 
     # def get_deposit_history(self, txId):
     #     params = {'txId': txId, 'limit': 50}
     #     return self._request_with_params(GET, DEPOSIT_HISTORIY, params)
 
     # Get Withdrawal History
-    def get_withdrawal_history(self):
-        params = {}
-        return self._request_with_params(GET, WITHDRAWAL_HISTORIY, params)
+    def get_withdrawal_history(self, operation_type, N):
+        params = {
+            "operation_type": operation_type,
+            "N": N
+        }
+        return self._request_with_params(GET, DEPOSIT_WITHDRAW_HISTORIY, params)
 
     # def get_withdrawal_history(self, wdId):
     #     params = {'wdId': wdId}

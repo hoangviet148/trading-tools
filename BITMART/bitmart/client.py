@@ -25,11 +25,11 @@ class Client(object):
 
         print(f"request_path {request_path} params {params}")
 
-        # if method == c.GET:
-        #     request_path = request_path + utils.parse_params_to_str(params)
-        # url
-        print(c.API_URL)
-        url = c.API_URL + request_path
+        if method == c.GET or method == c.DELETE:
+            url = c.API_URL + request_path + utils.parse_params_to_str(params)
+        else:
+            url = c.API_URL + request_path
+
         timestamp = utils.get_timestamp()
         body = json.dumps(params)
 
@@ -44,7 +44,7 @@ class Client(object):
         print("body:", body)
 
         if method == c.GET:
-            response = requests.get(url, headers=header, data=body)
+            response = requests.get(url, headers=header)
             print(f"response get === {response.json()} - {response.status_code}")
         elif method == c.POST:
             try:

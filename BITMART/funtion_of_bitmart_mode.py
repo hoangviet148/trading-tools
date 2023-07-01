@@ -69,15 +69,15 @@ class BITMART_FUNCTION:
             (10**int(decimal_places))
         return number
 
-    def get_balances_bitmart(self, currencys):  # Check số dư của 1 token trên sàn
+    def get_balances_bitmart(self, currency):  # Check số dư của 1 token trên sàn
         while True:
             try:
-                res = self.FundingAPI.get_balances(currencys=currencys)
-                # print("res", res)
-                if not res['data']:
+                res = self.FundingAPI.get_balances(currency=currency)
+                print("res", res)
+                if res['data']['wallet'] == []:
                     balance = 0
                 else:
-                    balance = res['data'][currencys]
+                    balance = res['data']['wallet']['available']
                 break
             except:
                 time.sleep(1)
@@ -298,30 +298,8 @@ class BITMART_FUNCTION:
         Klin = int(amounin*10**4)/(10**4)
         print("khối lượng vào", Klin)
         try:
-            # result = self.TradeAPI.place_order(
-            #     type_='limit', symbol=symbol, price=price, side="sell", size=Klin)
-            result = {
-                "code" : 1000,
-                "message" : "success",
-                "data" : {
-                    "orderId" : "118100034543076010",
-                    "clientOrderId" : "118100034543076010",
-                    "symbol" : "BTC_USDT",
-                    "side" : "sell",
-                    "orderMode" : "spot",
-                    "type" : "limit",
-                    "state" : "filled",
-                    "price" : "48800.00",
-                    "priceAvg" : "39999.00",
-                    "size" : "0.10000",
-                    "filledSize" : "0.10000",
-                    "notional" : "4880.00000",
-                    "filledNotional" : "3999.90000",
-                    "createTime" : 1681701557927,
-                    "updateTime" : 1681701559408
-                },
-                "trace" : "8aab576e50024648ae45e3cfaf90f9cf.60.16817015721880197"
-            }
+            result = self.TradeAPI.place_order(
+                type_='limit', symbol=symbol, price=price, side="sell", size=Klin)
         except:
             print("Lỗi ", sys.exc_info())
 
@@ -335,23 +313,21 @@ class BITMART_FUNCTION:
         print("order_id", order_id)
         order_details = None
         for i in range(4):
-            response = self.TradeAPI.get_orders(symbol)
-            for item in response['data']:
-                if item['id'] == order_id:
-                    order_details = item
+            response = self.TradeAPI.get_orders(order_id)
+            order_details = response['data'] 
             print("get_order_details ", order_details)
             deal_price = order_details['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['dealVolume']
+            dealSize = order_details['size']
             print("dealSize", dealSize)
-            status = order_details['status']
-            print("status", status)
-            if 'Pending orders' in status or 'Partially filled' in status:
+            state = order_details['state']
+            print("state", state)
+            if 'new' in status or 'partially_filled' in status:
                 if i > 2:
                     print("Lệnh sell đang còn mở")
                     result = self.TradeAPI.cancel_order(order_id)
                     print("result_cancel_buy", result)
-                    if result['code'] == '0':
+                    if result['code'] == 1000:
                         print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
                         if deal_price == '0':
                             result = "KHÔNG BÁN ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!"
@@ -425,27 +401,19 @@ class BITMART_FUNCTION:
     def get_deposit_address_bitmart(self, currency, chain):
         currency = currency.upper()
         if chain == "Polygon":
-            chainID = "Polygon"
+            chainID = "MATIC"
         elif chain == "OPT":
-            chainID = "Optimism"
-        elif chain == "BSC":
-            chainID = "BEP"
+            chainID = "OPTIMISM"
         elif chain == "TRON":
-            if "USD" not in symbol.upper():
-                chainID = "Tron"
-            else:
-                chainID = "TRC20"
+            chainID = "TRX"
         elif chain == "AVAX":
-            chainID = "Avalanche C-Chain"
+            chainID = "AVAX"
         elif chain == "ETH":
-            chainID = "ERC20"
+            chainID = "ARBI"
         elif chain == "FTM":
             chainID = "Fantom"
         elif chain == "SOL":
-            if "USD" not in symbol.upper():
-                chainID = "Solana"
-            else:
-                chainID = "SPL"
+            chainID = "SOL"
         elif chain == "KLAY":
             chainID = "Klaytn"
         elif chain == "ARB":
@@ -453,14 +421,14 @@ class BITMART_FUNCTION:
         else:
             chainID = chain
         print("chainID", chainID)
+        currency = currency + '-' + chainID
         try:
             res = self.FundingAPI.get_deposit_address(currency=currency)
             print(f"res: {res['data']}")
-            if res['status'] == 0:
-                if len(res['data']) != 0:
-                    return res['data'][chainID]
-                else:
-                    return ["No address avaiable"]
+            if res['code'] == 1000:
+                return res['data']['address']
+            else:
+                return ["No address avaiable"]
         except:
             err = str(sys.exc_info())
             print("err", err)
@@ -472,10 +440,10 @@ class BITMART_FUNCTION:
         currency = currency.upper()
         try:
             res = self.FundingAPI.get_currency()
-            for item in res['data']:
+            for item in res['data']['currencies']:
                 if currency == item['currency']:
                     # print(item['supportDeposit'])
-                    if item['supportDeposit'] != True:
+                    if item['deposit_enabled'] != True:
                         print("Tạm dừng nạp tiền rồi. Token ", currency)
                         return None
                     else:
@@ -484,104 +452,107 @@ class BITMART_FUNCTION:
             print(f"lỗi request {e}")
 
     # Lấy trạng thái khả dụng hay bị dừng rút tiền
-    def get_status_withdrawal_bitmart(self, symbol, key, amount):
+    def get_status_withdrawal_bitmart(self, currency):
         currency = currency.upper()
         try:
             res = self.FundingAPI.get_currency()
-            for item in res['data']:
+            for item in res['data']['currencies']:
                 if currency == item['currency']:
                     # print(item['supportWithdraw'])
-                    status = item['supportWithdraw']
+                    status = item['withdraw_enabled']
                     if status != True:
                         print("Tạm dừng rút tiền rồi ", currency)
                         return None
                     else:
-                        maxWithdrawSingle = item['maxWithdrawSingle']
-                        minWithdrawSingle = item['minWithdrawSingle']
-                        return status, maxWithdrawSingle, minWithdrawSingle
+                        minWithdrawSingle = item['withdraw_minsize']
+                        return status, minWithdrawSingle
         except Exception as e:
             print(f"lỗi request {e}")
 
     # Lấy lịch sử nạp tiền
     def get_deposit_history_bitmart(self, currency, id):
-        res = self.FundingAPI.get_deposit_history(currency=currency)
+        res = self.FundingAPI.get_deposit_history(currency=currency, operation_type='deposit', N=100)
         print("res", res)
-        if res['code'] == 0:
-            for res_dep in res['data']['data']:
-                if str(id).lower() in res_dep['id'].lower():
-                    status = res_dep['state']
-                    print("state", state)
-                    if state == -1:
-                        print("Failure " + str(currency))
-                        sta = "Failure.Token: " + str(currency)
-                    elif state == 0:
-                        print("Acknowledged " + str(currency))
-                        sta = "Acknowledged " + str(currency)
-                    elif state == 3:
-                        print("Confirmation in progress " + str(currency))
-                        sta = "Confirmation in progress " + str(currency)
+        if res['code'] == 1000:
+            for res_dep in res['data']['records']:
+                if str(id).lower() in res_dep['deposit_id'].lower():
+                    status = res_dep['status']
+                    print("status", status)
+                    if status == 0:
+                        print("Create " + str(currency))
+                        sta = "Create.Token: " + str(currency)
+                    elif status == 1:
+                        print("Submitted, waiting for withdrawal " + str(currency))
+                        sta = "Submitted, waiting for withdrawal " + str(currency)
+                    elif status == 2:
+                        print("Processing " + str(currency))
+                        sta = "Processing " + str(currency)
+                    elif status == 3:
+                        print("Processing " + str(currency))
+                        sta = "Processing " + str(currency)
+                    elif status == 4:
+                        print("Cancel " + str(currency))
+                        sta = "Cancel " + str(currency)
+                    elif status == 5:
+                        print("Fail " + str(currency))
+                        sta = "Fail " + str(currency)
                         break
                 return sta
         else:
-            print("Lỗi get status deposit Kraken")
-            return "Lỗi get status deposit Kraken"
+            print("Lỗi get status deposit Bitmart")
+            return "Lỗi get status deposit Bitmart"
 
     def get_withdraw_history_bitmart(self, wd_id):  # Lấy lịch sử rút tiền
         try:
-            res = self.FundingAPI.get_withdrawal_history()
-            if res['code'] == 0:
-                if res['data']['total'] == 0:
+            res = self.FundingAPI.get_withdrawal_history(operation_type='withdraw', N=100)
+            if res['code'] == 1000:
+                if res['data']['records'] == []:
                     return ["Không có giao dịch rút tiền gần đây!"]
-            for res_wd in res['data']['data']:
-                if str(wd_id).lower() in str(res_wd['id']).lower():
-                    state = res_wd['state']
-                    print("state", state)
-                    if res_wd['state'] == -1:
-                        sta = "Failure"
-                    elif res_wd['state'] == 0:
-                        sta = "Acknowledged"
-                    elif res_wd['state'] == 1:
-                        sta = "Submitted"
-                    elif res_wd['state'] == 2:
-                        sta = "Cancelled"
-                    elif res_wd['state'] == 5:
-                        sta = "Awaiting confirmation"
+            for res_wd in res['data']['records']:
+                if str(wd_id).lower() in str(res_wd['withdraw_id']).lower():
+                    state = res_wd['status']
+                    print("status", status)
+                    if res_wd['status'] == 0:
+                        sta = "Create"
+                    elif res_wd['status'] == 1:
+                        sta = "Submitted, waiting for withdrawal"
+                    elif res_wd['status'] == 2:
+                        sta = "Processing"
+                    elif res_wd['status'] == 3:
+                        sta = "Processing"
+                    elif res_wd['status'] == 4:
+                        sta = "Cancel"
+                    elif res_wd['status'] == 5:
+                        sta = "Fail"
         except:
-            print("Lỗi request WD history Kraken " + str(sys.exc_info()))
-            sta = "Lỗi request WD history Kraken"
+            print("Lỗi request WD history Bitmart " + str(sys.exc_info()))
+            sta = "Lỗi request WD history Bitmart"
         return sta
 
     # Hàm rút tiền từ bitmart về  ví metamask
-    def submit_token_withdrawal_bitmart(self, asset, amount, address):
-        balance = self.get_balances_bitmart(asset)
-        fee = self.get_status_withdrawal_bitmart(asset, address, amount)
-        print(f"fee {fee} {type(fee)}")
-        list_fee_ruttien = [float(fee)]
+    def submit_token_withdrawal_bitmart(self, currency, amount, destination, address):
+        balance = self.get_balances_bitmart(currency)
         status = ''
         if float(balance) > 0 and float(balance) >= float(amount):
-            for fee_rutien in list_fee_ruttien:
-                try:
-                    print("size ", amount)
-                    nonce = int(time.time() * 1000)
-                    res = self.FundingAPI.coin_withdraw(
-                        nonce, asset, address, amount)
-                    print("submit_token_withdrawal_bitmart ", res)
-                    if len(res['error']) == 0:
-                        withdrawal_ID = res['result']['refid']
-                        print("withdrawal_ID", withdrawal_ID)
-                        print("Đã rút tiền chờ tiền về tài khoản!")
-                        status = "Đã rút tiền chờ tiền về tài khoản!"
-                        return True, status, withdrawal_ID
-                    else:
-                        print("Rút tiền thất bại! " +
-                              str(res['error']) + "fee =" + str(fee_rutien))
-                        status = res['error']
-                        continue
-                except:
-                    err = str(sys.exc_info())
-                    print("Lỗi submit_token_withdrawal_bitmart ", err)
-                    continue
-            return False, status, 0
+            try:
+                print("size ", amount)
+                res = self.FundingAPI.coin_withdraw(currency, amount, destination, address)
+                print("submit_token_withdrawal_bitmart ", res)
+                if res['code'] == 1000:
+                    withdrawal_ID = res['data']['withdraw_id']
+                    print("withdrawal_ID", withdrawal_ID)
+                    print("Đã rút tiền chờ tiền về tài khoản!")
+                    status = "Đã rút tiền chờ tiền về tài khoản!"
+                    return True, status, withdrawal_ID
+                else:
+                    print("Rút tiền thất bại! " + str(res['message']))
+                    status = res['message']
+                    return False, status, 0
+            except:
+                err = str(sys.exc_info())
+                print("Lỗi submit_token_withdrawal_bitmart ", err)
+                status = err
+                return 'False1', status, 0
         else:
             print("Không đủ tiền để rút rồi người đẹp!")
             status = "Không đủ tiền rút rồi!!!"
@@ -597,14 +568,14 @@ toolbitmart = BITMART_FUNCTION(keypass='')
 # print(toolbitmart.find_quantity_price_buy_bitmart("ETH", 1, "USDT", "", "", 0.1))
 # print(toolbitmart.find_quantity_price_sell_bitmart("ETH", 1, "USDT", "", "", 0.1))
 
-# print(toolbitmart.real_buy_in_bitmart("BTC", "USDT", 100, 0, "", "", 0.5)) # no
-print(toolbitmart.real_sell_in_bitmart("BTC", "USDT", 10, 0, "proxy", False, 5)) # no
+# print(toolbitmart.real_buy_in_bitmart("BTC", "USDT", 100, 0, "", "", 0.5))
+# print(toolbitmart.real_sell_in_bitmart("BTC", "USDT", 10, 0, "proxy", False, 5))
 
-# print(toolbitmart.get_deposit_address_bitmart("ETH", "FTM"))  # no
+# print(toolbitmart.get_deposit_address_bitmart("USDT", "ERC20"))  # no
 # print(toolbitmart.get_status_deposit_bitmart("BTC")) # no
-# print(toolbitmart.get_status_withdrawal_bitmart("FTM", "metamaskARB", 2)) # no
+# print(toolbitmart.get_status_withdrawal_bitmart("FTM")) # no
 # print(toolbitmart.get_deposit_history_bitmart("USDT", "1"))  # no
 # print(toolbitmart.get_withdraw_history_bitmart("1"))  # no
 # print(toolbitmart.get_balances_bitmart("ETH")) # no
-# print(toolbitmart.submit_token_withdrawal_bitmart("FTM", 1, "metamaskARB")) # no
+print(toolbitmart.submit_token_withdrawal_bitmart("FTM", 1, "To Digital Address" ,"0x1EE6FA5A3803608fc22a1f3F76")) # no
 # print(toolbitmart.submit_token_withdrawal_bitmart("USDT", 2.5, "USDT_ARB")) # no

@@ -26,8 +26,8 @@ class TradeAPI(Client):
 
     # Cancel Order
     def cancel_order(self, order_id=None):
-        params = {'orderId': order_id}
-        return self._request_with_params(POST, CANAEL_ORDER, params)
+        params = {'order_id': order_id}
+        return self._request_with_params(POST, CANCEL_ORDER, params)
 
     # Cancel Multiple Orders
     def cancel_multiple_orders(self, orders_data):
