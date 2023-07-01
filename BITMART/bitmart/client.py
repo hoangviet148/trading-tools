@@ -9,10 +9,11 @@ from urllib import parse
 
 class Client(object):
 
-    def __init__(self, api_key, api_secret_key):
+    def __init__(self, api_key, secret_key):
 
         self.API_KEY = api_key
-        self.API_SECRET_KEY = api_secret_key        
+        self.SECRET_KEY = secret_key   
+        self.MEMO = "api1"     
 
     def _public_request(self, method, request_path):
         url = c.API_URL + request_path
@@ -27,34 +28,27 @@ class Client(object):
         # if method == c.GET:
         #     request_path = request_path + utils.parse_params_to_str(params)
         # url
+        print(c.API_URL)
         url = c.API_URL + request_path
+        timestamp = utils.get_timestamp()
+        body = json.dumps(params)
 
-        # Generate signature
-        url = url + "?" + parse.urlencode(params)
-        params_arr = url.split("?")
-        source = ""
-        if len(params_arr) > 1:
-            param = params_arr[1]
-            unsorted_arr = param.split("&")
-            source = "&".join(sorted(unsorted_arr))
-            print(source)
-        sign = hmac.new(bytes(self.API_SECRET_KEY, encoding='utf-8'), bytes(source, encoding='utf-8'), sha256).hexdigest()
+        sign = utils.sign(utils.pre_substring(timestamp, self.MEMO, str(body)), self.SECRET_KEY)
     
-        header = utils.get_header(self.API_KEY, sign)
+        header = utils.get_header(self.API_KEY, sign, timestamp)
        
         # send request
         response = None
-
         print("url:", url)
         print("headers:", header)
-        print("body:", params)
+        print("body:", body)
 
         if method == c.GET:
-            response = requests.get(url, headers=header, data=params)
-            print(f"response === {response.json()} - {response.status_code}")
+            response = requests.get(url, headers=header, data=body)
+            print(f"response get === {response.json()} - {response.status_code}")
         elif method == c.POST:
             try:
-                response = requests.post(url, headers=header, data=params)
+                response = requests.post(url, headers=header, data=body)
                 print(f"response post === {response.json()} - {response.status_code}")
             except Exception as e:
                 print(f"Exception {e}")
@@ -64,7 +58,7 @@ class Client(object):
         # print(response.headers)
 
         if not str(response.status_code).startswith('2'):
-            raise exceptions.krakenAPIException(response)
+            raise exceptions.APIException(response)
 
         return response.json()
 

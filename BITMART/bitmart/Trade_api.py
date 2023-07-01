@@ -9,13 +9,13 @@ class TradeAPI(Client):
         Client.__init__(self, api_key, api_secret_key)
 
     # Place Order
-    def place_order(self, direction, symbol, price, type_, volume):
+    def place_order(self, side, symbol, price, type_, size):
         params = {
-            "direction": direction,
+            "side": side,
             "symbol": symbol,
             "price": price,
             "type": type_,
-            "volume": volume
+            "size": size
         }
 
         return self._request_with_params(POST, PLACE_ORDER, params)
@@ -51,9 +51,9 @@ class TradeAPI(Client):
         return self._request_with_params(POST, CLOSE_POSITION, params)
 
     # Get Order Details
-    def get_orders(self, symbol=None):
-        params = {'symbol': symbol}
-        return self._request_with_params(GET, ORDER_INFO, params)
+    def get_orders(self, order_id=None):
+        params = {'orderId': order_id}
+        return self._request_with_params(POST, ORDER_INFO, params)
 
     # Get Order List
     def get_order_list(self, instType=None, uly=None, instId=None, ordType=None, state=None, after=None, before=None, limit=None):

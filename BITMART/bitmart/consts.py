@@ -1,15 +1,16 @@
 # http header
-API_URL = 'https://api.bkex.com'
+API_URL = 'https://api-cloud.bitmart.com'
 
 CONTENT_TYPE = 'Content-Type'
-ACCESS_KEY = 'X_ACCESS_KEY'
-ACCESS_SIGN = 'X_SIGNATURE'
+ACCESS_KEY = 'X-BM-KEY'
+ACCESS_SIGN = 'X-BM-SIGN'
+TIMESTAMP= 'X-BM-TIMESTAMP'
 
 ACEEPT = 'Accept'
 COOKIE = 'Cookie'
 LOCALE = 'Locale='
 
-APPLICATION_JSON = 'application/x-www-form-urlencoded; charset=utf-8'
+APPLICATION_JSON = 'application/json'
 
 GET = "GET"
 POST = "POST"
@@ -79,14 +80,14 @@ INTEREST_RATE_LOAN_QUATA = '/api/v5/public/interest-rate-loan-quota'
 VIP_INTEREST_RATE_LOAN_QUATA = '/api/v5/public/vip-interest-rate-loan-quota'
 
 # TRADE
-PLACE_ORDER = '/v2/u/order/create'
+PLACE_ORDER = '/spot/v2/submit_order'
 BATCH_ORDERS = '/api/v5/trade/batch-orders'
 CANAEL_ORDER = '/v2/u/order/cancel'
 CANAEL_BATCH_ORDERS = '/api/v5/trade/cancel-batch-orders'
 AMEND_ORDER = '/api/v5/trade/amend-order'
 AMEND_BATCH_ORDER = '/api/v5/trade/amend-batch-orders'
 CLOSE_POSITION = '/api/v5/trade/close-position'
-ORDER_INFO = '/v2/u/order/openOrders'
+ORDER_INFO = '/spot/v4/query/order'
 ORDERS_PENDING = '/api/v5/trade/orders-pending'
 ORDERS_HISTORY = '/api/v5/trade/orders-history'
 ORDERS_HISTORY_ARCHIVE = '/api/v5/trade/orders-history-archive'

@@ -89,11 +89,9 @@ class BITMART_FUNCTION:
     # Lấy danh sách các lệnh đang được đặt trên sàn
     def get_depth_bitmart(self, symbol, usd, proxy, fake_ip):
         token = (symbol + "_" + usd).upper()
-        states = 'submitted,partial-filled,filled'  # Order states to include
-        url = "https://api.bitmart.com/v2/q/depth"
-        data = {
-            'symbol': token,
-            'states': states
+        url = "https://api-cloud.bitmart.com/spot/v1/symbols/book"
+        params = {
+            'symbol': token        
         }
         try:
             if fake_ip == True:
@@ -101,17 +99,17 @@ class BITMART_FUNCTION:
                     'http': str(proxy),
                     'https': str(proxy)
                 }
-                res = requests.get(url, data=data, proxies=proxies, timeout=5)
+                res = requests.get(url, params=params, proxies=proxies, timeout=5)
             else:
-                res = requests.get(url, data=data, timeout=5).json()
+                res = requests.get(url, params=params, timeout=5).json()
 
-            # print(f"=== {res} ===")
-            if res['status'] != 0:
+            # print(f"=== {res['data']} ===")
+            if res['code'] != 1000:
                 return 0
             else:
                 return res['data']
         except Exception as e:
-            print("Exception", e)
+            print("Exception: ", e)
             return 0
 
     # Kiểm tra nếu dùng 1 số usd thì mua được bao nhiêu đồng coin
@@ -119,23 +117,23 @@ class BITMART_FUNCTION:
         result = self.get_depth_bitmart(symbol, usd, proxy, fake_ip)
         # print("result ", result)
         try:
-            list_asks = result['ask']
-            print("list_asks ", list_asks)
+            list_asks = result['buys']
+            print("list_buys ", list_asks)
         except:
             return 0
         sum_value_ask = 0
         total_volume = 0
         for ask in list_asks:
             # print(ask)
-            sum_value_ask = sum_value_ask + float(ask[0])*float(ask[1])
-            total_volume = total_volume + float(ask[1])
+            sum_value_ask = sum_value_ask + float(ask['price'])*float(ask['amount'])
+            total_volume = total_volume + float(ask['amount'])
             if float(sum_value_ask) >= float(amountin):
                 # print(ask)
                 tien_con_thieu = amountin - \
-                    (sum_value_ask - float(ask[0])*float(ask[1]))
+                    (sum_value_ask - float(ask['price'])*float(ask['amount']))
                 # print("tien_con_thieu ", tien_con_thieu)
                 total_return = total_volume - \
-                    float(ask[1]) + tien_con_thieu/float(ask[0])
+                    float(ask['amount']) + tien_con_thieu/float(ask['price'])
                 # print("total_return", total_return)
                 return float(total_return)*(100-0.1)/100
         if float(sum_value_ask) < float(amountin):
@@ -145,23 +143,23 @@ class BITMART_FUNCTION:
     def get_return_sell_bitmart(self, symbol, usd, amountin, proxy, fake_ip):
         result = self.get_depth_bitmart(symbol, usd, proxy, fake_ip)
         try:
-            list_bids = result['bid']
+            list_bids = result['sells']
         except:
             return 0
         sum_value_bids = 0
         total_volume = 0
         for bid in list_bids:
-            sum_value_bids = sum_value_bids + float(bid[0])*float(bid[1])
-            total_volume = total_volume + float(bid[1])
+            sum_value_bids = sum_value_bids + float(bid['price'])*float(bid['amount'])
+            total_volume = total_volume + float(bid['amount'])
             # print("sum_value_bids", sum_value_bids)
             # print("total_volume", total_volume)
             # print("------------")
             if float(total_volume) >= float(amountin):
                 # print(bid)
-                tien_con_thieu = amountin - (total_volume - float(bid[1]))
+                tien_con_thieu = amountin - (total_volume - float(bid['amount']))
                 # print("tien_con_thieu", tien_con_thieu)
                 total_return = sum_value_bids - \
-                    float(bid[0])*float(bid[1]) + tien_con_thieu*float(bid[0])
+                    float(bid['price'])*float(bid['amount']) + tien_con_thieu*float(bid['price'])
                 # print("total_return", total_return)
                 return float(total_return)*(100-0.26)/100
         if float(total_volume) < float(amountin):
@@ -172,28 +170,28 @@ class BITMART_FUNCTION:
         result = self.get_depth_bitmart(symbol, token_usd, proxy, fake_ip)
         # print(result)
         try:
-            list_asks = result['ask']
+            list_asks = result['buys']
         except:
             return 0, 0
         # print(list_bids)
         # print(list_asks)
         sum_value_ask = 0
         total_volume = 0
-        price_start = float(list_asks[0][0])
+        price_start = float(list_asks[0]['price'])
         for ask in list_asks:
-            sum_value_ask = sum_value_ask + float(ask[0])*float(ask[1])
-            total_volume = total_volume + float(ask[1])
+            sum_value_ask = sum_value_ask + float(ask['price'])*float(ask['amount'])
+            total_volume = total_volume + float(ask['amount'])
             print("sum_value_ask", sum_value_ask)
             print("total_volume", total_volume)
             print("------------")
-            price_find = float(ask[0])
+            price_find = float(ask['price'])
             if float(sum_value_ask) >= float(amountin):
                 # print(ask)
                 tien_con_thieu = float(
-                    amountin) - (float(sum_value_ask) - float(ask[0])*float(ask[1]))
+                    amountin) - (float(sum_value_ask) - float(ask['price'])*float(ask['amount']))
                 print("tien_con_thieu", tien_con_thieu)
                 total_return = float(total_volume) - \
-                    float(ask[1]) + tien_con_thieu/float(ask[0])
+                    float(ask['amount']) + tien_con_thieu/float(ask['price'])
                 print("total_return", total_return)
                 return price_find, total_return*(100-0.1)/100
         if float(price_find) > price_start*(1+float(truotgiasan)/100):
@@ -230,13 +228,13 @@ class BITMART_FUNCTION:
         print("price ", price)
         try:
             result = self.TradeAPI.place_order(
-                type_='LIMIT', symbol=symbol, price=price, direction="ASK", volume=Klin)
-            print("result", result)
+                type_='limit', symbol=symbol, price=price, side="buy", size=Klin)
+            # print("result", result)
         except:
-            print("Lỗi ", sys.exc_info())
+            print("Lỗi: ", sys.exc_info())
 
-        if result['code'] == 0:
-            order_id = result['data']
+        if result['code'] == 1000:
+            order_id = result['data']['orderId']
             print("Đã đặt lệnh thành công")
         else:
             print("Lỗi rồi.....", result)
@@ -245,18 +243,16 @@ class BITMART_FUNCTION:
         print("order_id", order_id)
         order_details = None
         for i in range(4):
-            response = self.TradeAPI.get_orders(symbol)
-            for item in response['data']:
-                if item['id'] == order_id:
-                    order_details = item
+            response = self.TradeAPI.get_orders(order_id)
+            order_details = response['data'] 
             print("get_order_details ", order_details)
             deal_price = order_details['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['dealVolume']
+            dealSize = order_details['size']
             print("dealSize", dealSize)
-            status = order_details['status']
-            print("status", status)
-            if 'Pending orders' in status or 'Partially filled' in status:
+            state = order_details['state']
+            print("state", state)
+            if 'new' in state or 'partially_filled' in state:
                 if i > 2:
                     print("Lệnh đang buy market còn mở")
                     result = self.TradeAPI.cancel_order(order_id)
@@ -302,13 +298,35 @@ class BITMART_FUNCTION:
         Klin = int(amounin*10**4)/(10**4)
         print("khối lượng vào", Klin)
         try:
-            result = self.TradeAPI.place_order(
-                type_='LIMIT', symbol=symbol, price=price, direction="BID", volume=Klin)
+            # result = self.TradeAPI.place_order(
+            #     type_='limit', symbol=symbol, price=price, side="sell", size=Klin)
+            result = {
+                "code" : 1000,
+                "message" : "success",
+                "data" : {
+                    "orderId" : "118100034543076010",
+                    "clientOrderId" : "118100034543076010",
+                    "symbol" : "BTC_USDT",
+                    "side" : "sell",
+                    "orderMode" : "spot",
+                    "type" : "limit",
+                    "state" : "filled",
+                    "price" : "48800.00",
+                    "priceAvg" : "39999.00",
+                    "size" : "0.10000",
+                    "filledSize" : "0.10000",
+                    "notional" : "4880.00000",
+                    "filledNotional" : "3999.90000",
+                    "createTime" : 1681701557927,
+                    "updateTime" : 1681701559408
+                },
+                "trace" : "8aab576e50024648ae45e3cfaf90f9cf.60.16817015721880197"
+            }
         except:
             print("Lỗi ", sys.exc_info())
 
-        if result['code'] == '0':
-            order_id = result['data']
+        if result['code'] == 1000:
+            order_id = result['data']['orderId']
             print("Đã đặt lệnh thành công")
         else:
             print("Lỗi rồi.....", result)
@@ -354,27 +372,27 @@ class BITMART_FUNCTION:
         result = self.get_depth_bitmart(symbol, token_usd, proxy, fake_ip)
         # print(f"get_depth_bitmart {result}")
         try:
-            list_bids = result['bid']
+            list_bids = result['sells']
         except:
             return 0
         sum_value_bids = 0
         total_volume = 0
-        price_start = float(list_bids[0][0])
+        price_start = float(list_bids[0]['amount'])
 
         for bid in list_bids:
             sum_value_bids = sum_value_bids + \
-                float(bid[0])*float(bid[1])  # tiền
-            total_volume = total_volume + float(bid[1])  # khối lượng
+                float(bid['price'])*float(bid['amount'])  # tiền
+            total_volume = total_volume + float(bid['amount'])  # khối lượng
             print("sum_value_bids", sum_value_bids)
             print("total_volume", total_volume)
             print("------------")
-            price_find = bid[0]
+            price_find = bid['price']
 
             if float(total_volume) >= float(amountin):
-                tien_con_thieu = amountin - (total_volume - float(bid[1]))
+                tien_con_thieu = amountin - (total_volume - float(bid['amount']))
                 print("tien_con_thieu", tien_con_thieu)
                 total_return = sum_value_bids - \
-                    float(bid[0])*float(bid[1]) + tien_con_thieu*float(bid[0])
+                    float(bid['price'])*float(bid['amount']) + tien_con_thieu*float(bid['price'])
                 print("total_return", total_return)
                 return price_find, total_return*(100-0.1)/100
             # print("price", price_find )
@@ -572,15 +590,15 @@ class BITMART_FUNCTION:
 
 toolbitmart = BITMART_FUNCTION(keypass='')
 
-# print(f'=== {toolbitmart.get_return_buy_bitmart(symbol="BTC", usd="USDT", amountin=1, proxy="", fake_ip=False)}')
-# print(f'=== 1 LTC sell {toolbitmart.get_return_sell_bitmart(symbol="ETH", usd="USDT", amountin=1, proxy="", fake_ip=False)} USDT')
+# print(toolbitmart.get_depth_bitmart("BTC", "USDT", "", ""))
+# print(f'=== {toolbitmart.get_return_buy_bitmart(symbol="BMX", usd="USDT", amountin=1, proxy="", fake_ip=False)}')
+# print(f'=== {toolbitmart.get_return_sell_bitmart(symbol="ETH", usd="USDT", amountin=1, proxy="", fake_ip=False)}')
 
 # print(toolbitmart.find_quantity_price_buy_bitmart("ETH", 1, "USDT", "", "", 0.1))
 # print(toolbitmart.find_quantity_price_sell_bitmart("ETH", 1, "USDT", "", "", 0.1))
-# print(toolbitmart.get_depth_bitmart("BTC", "USDT", "", ""))
 
-# print(toolbitmart.real_buy_in_bitmart("BTC", "USDT", 5, 0, "", "", 0.5)) # no
-# print(toolbitmart.real_sell_in_bitmart("BTC", "USDT", 10, 0, "proxy", False, 5)) # no
+# print(toolbitmart.real_buy_in_bitmart("BTC", "USDT", 100, 0, "", "", 0.5)) # no
+print(toolbitmart.real_sell_in_bitmart("BTC", "USDT", 10, 0, "proxy", False, 5)) # no
 
 # print(toolbitmart.get_deposit_address_bitmart("ETH", "FTM"))  # no
 # print(toolbitmart.get_status_deposit_bitmart("BTC")) # no
