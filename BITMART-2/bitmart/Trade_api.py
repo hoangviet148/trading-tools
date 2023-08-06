@@ -5,19 +5,17 @@ import time
 
 class TradeAPI(Client):
 
-    def __init__(self, api_key, api_secret_key):
-        Client.__init__(self, api_key, api_secret_key)
+    def __init__(self, api_key, api_secret_key, memo):
+        Client.__init__(self, api_key, api_secret_key, memo)
 
     # Place Order
-    def place_order(self, side, baseCurrency, quoteCurrency, price, quantity, type_, condition):
+    def place_order(self, side, symbol, price, type_, size):
         params = {
             "side": side,
-            "baseCurrency": baseCurrency,
-            "quoteCurrency": quoteCurrency,
+            "symbol": symbol,
             "price": price,
-            "quantity": quantity,
             "type": type_,
-            "condition": condition
+            "size": size
         }
 
         return self._request_with_params(POST, PLACE_ORDER, params)
@@ -28,9 +26,7 @@ class TradeAPI(Client):
 
     # Cancel Order
     def cancel_order(self, order_id=None):
-        params = {
-            'id': order_id
-        }
+        params = {'order_id': order_id}
         return self._request_with_params(POST, CANCEL_ORDER, params)
 
     # Cancel Multiple Orders
@@ -56,8 +52,8 @@ class TradeAPI(Client):
 
     # Get Order Details
     def get_orders(self, order_id=None):
-        request_path = f"{ORDER_INFO}/{order_id}"
-        return self._request_without_params(GET, request_path)
+        params = {'orderId': order_id}
+        return self._request_with_params(POST, ORDER_INFO, params)
 
     # Get Order List
     def get_order_list(self, instType=None, uly=None, instId=None, ordType=None, state=None, after=None, before=None, limit=None):

@@ -1,10 +1,10 @@
 # http header
-API_URL = 'https://api.latoken.com'
+API_URL = 'https://api-cloud.bitmart.com'
 
 CONTENT_TYPE = 'Content-Type'
-ACCESS_KEY = 'X-LA-APIKEY'
-ACCESS_SIGN = 'X-LA-SIGNATURE'
-DIGEST = 'X-LA-DIGEST'
+ACCESS_KEY = 'X-BM-KEY'
+ACCESS_SIGN = 'X-BM-SIGN'
+TIMESTAMP= 'X-BM-TIMESTAMP'
 
 ACEEPT = 'Accept'
 COOKIE = 'Cookie'
@@ -38,7 +38,7 @@ SET_GREEKS = '/api/v5/account/set-greeks'
 MAX_WITHDRAWAL = '/api/v5/account/max-withdrawal'
 
 # funding
-DEPOSIT_ADDRESS = '/v2/auth/transaction/depositAddress'
+DEPOSIT_ADDRESS = '/account/v1/deposit/address'
 WITHDRAWAL_INFO = '/0/private/WithdrawInfo'
 GET_BALANCES = '/account/v1/wallet'
 FUNDS_TRANSFER = '/0/private/WalletTransfer'
@@ -81,14 +81,14 @@ INTEREST_RATE_LOAN_QUATA = '/api/v5/public/interest-rate-loan-quota'
 VIP_INTEREST_RATE_LOAN_QUATA = '/api/v5/public/vip-interest-rate-loan-quota'
 
 # TRADE
-PLACE_ORDER = '/v2/auth/order/place'
+PLACE_ORDER = '/spot/v2/submit_order'
 BATCH_ORDERS = '/api/v5/trade/batch-orders'
-CANCEL_ORDER = '/v2/auth/order/cancel'
+CANCEL_ORDER = '/spot/v2/cancel_order'
 CANAEL_BATCH_ORDERS = '/api/v5/trade/cancel-batch-orders'
 AMEND_ORDER = '/api/v5/trade/amend-order'
 AMEND_BATCH_ORDER = '/api/v5/trade/amend-batch-orders'
 CLOSE_POSITION = '/api/v5/trade/close-position'
-ORDER_INFO = '/v2/auth/order/getOrder'
+ORDER_INFO = '/spot/v4/query/order'
 ORDERS_PENDING = '/api/v5/trade/orders-pending'
 ORDERS_HISTORY = '/api/v5/trade/orders-history'
 ORDERS_HISTORY_ARCHIVE = '/api/v5/trade/orders-history-archive'

@@ -6,10 +6,10 @@ import hmac
 import base64
 from urllib import parse
 
-api_key = '0e6c4a52ca1fdc19bcbd05602800ca962e9ac56dbf6e0e550b0b194a429596d5'
-api_secret = '98a649b9fd88a32683e53c20a35593773a47d763ebd31daa6a35bad1c2603dcd'
+api_key = '6bf34c02-a263-4255-9cff-9cece36992d2'
+api_secret = 'MWM0Mjk2NzYtMTEwOS00NmQ4LWE5YjctZDc5YmZhMjY0NTQx'
 request_path = "/v2/u/account/balance"
-url = "https://api.bkex.com" + request_path
+url = "https://api.latoken.com" + request_path
 
 def get_sign(url):
     params_arr = url.split("?")

@@ -11,15 +11,8 @@ def clean_dict_none(d: dict) -> dict:
     return {k:d[k] for k in d.keys() if d[k] != None}
 
 
-def sign(method, endpoint, params, secret_key):
-    print("get sign start ====")
-    serializeFunc = map(lambda it : it[0] + '=' + str(it[1]), params.items())
-    bodyParams = '&'.join(serializeFunc)
-    mac = hmac.new(
-        bytes(secret_key, encoding='utf8'), 
-        (method + endpoint + bodyParams).encode('ascii'),
-        hashlib.sha512)
-    # print("get sign end ====")
+def sign(message, secret_key):
+    mac = hmac.new(bytes(secret_key, encoding='utf8'), bytes(message, encoding='utf-8'), digestmod='sha256')
     return mac.hexdigest()
 
 def pre_substring(timestamp, memo, body):
@@ -36,7 +29,7 @@ def get_header(api_key, sign, timestamp):
     header[c.CONTENT_TYPE] = c.APPLICATION_JSON
     header[c.ACCESS_KEY] = api_key
     header[c.ACCESS_SIGN] = sign
-    header[c.DIGEST] = "HMAC-SHA512"
+    header[c.TIMESTAMP] = str(timestamp)
     return header
 
 def parse_params_to_str(params):

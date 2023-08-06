@@ -4,15 +4,14 @@ from .consts import *
 
 class FundingAPI(Client):
 
-    def __init__(self, api_key, api_secret_key):
-        Client.__init__(self, api_key, api_secret_key)
+    def __init__(self, api_key, api_secret_key, memo):
+        Client.__init__(self, api_key, api_secret_key, memo)
 
     # Get Deposit Address
-    def get_deposit_address(self, currencyBinding):
+    def get_deposit_address(self, currency):
         params = {
-            "currencyBinding": currencyBinding        
-        }
-        return self._request_with_params(POST, DEPOSIT_ADDRESS, params)
+            "currency": currency        }
+        return self._request_with_params(GET, DEPOSIT_ADDRESS, params)
 
     # Get Balance
     def get_balances(self, currency):
@@ -26,8 +25,24 @@ class FundingAPI(Client):
 
     # Withdrawal
 
-    def coin_withdraw(self, nonce, asset, key, amount):
-        params = {'nonce': nonce, 'asset': asset, 'key': key, 'amount': amount}
+    #def coin_withdraw(self, nonce, asset, key, amount):
+        #params = {'nonce': nonce, 'asset': asset, 'key': key, 'amount': amount}
+        #return self._request_with_params(POST, WITHDRAWAL_COIN, params)
+
+    '''
+    {
+        "currency": "USDT-TRC20",
+        "amount": "100.000",
+        "destination": "To Digital Address",
+        "address": "0x1EE6FA5A3803608fc22a1f3F76********",
+        "address_memo": ""
+    }'
+    '''
+
+    # Withdrawal
+
+    def coin_withdraw(self, token, amount, destination, address):
+        params = {"currency": token, "amount": amount,  'destination': destination, "address": address, "address_memo": ""}
         return self._request_with_params(POST, WITHDRAWAL_COIN, params)
 
     # Get Deposit History
