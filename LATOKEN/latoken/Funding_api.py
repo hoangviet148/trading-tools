@@ -7,6 +7,10 @@ class FundingAPI(Client):
     def __init__(self, api_key, api_secret_key):
         Client.__init__(self, api_key, api_secret_key)
 
+    def get_list_deposit_address(self, currency):
+        request_path = f"{LIST_DEPOSIT_ADDRESS}/{currency}"
+        return self._request_without_params(GET, request_path)
+
     # Get Deposit Address
     def get_deposit_address(self, currencyBinding):
         params = {
@@ -15,9 +19,10 @@ class FundingAPI(Client):
         return self._request_with_params(POST, DEPOSIT_ADDRESS, params)
 
     # Get Balance
-    def get_balances(self, currency):
-        params = {'currency': currency}
-        return self._request_with_params(GET, GET_BALANCES, params)
+    def get_balances(self, currency, type_):
+        request_path = f"{GET_BALANCES}/{currency}/{type_}"
+        print(f"test=== {request_path}")
+        return self._request_without_params(GET, request_path)
 
     # Get Account Configuration
     def funds_transfer(self, nonce, asset, amount, From, to):
@@ -26,18 +31,18 @@ class FundingAPI(Client):
 
     # Withdrawal
 
-    def coin_withdraw(self, nonce, asset, key, amount):
-        params = {'nonce': nonce, 'asset': asset, 'key': key, 'amount': amount}
+    def coin_withdraw(self, currencyBinding, amount, destinationAddress):
+        params = {
+            'currencyBinding': currencyBinding, 
+            'amount': amount, 
+            'recipientAddress': destinationAddress
+        }
         return self._request_with_params(POST, WITHDRAWAL_COIN, params)
 
     # Get Deposit History
-    def get_deposit_history(self, currency, operation_type, N):
-        params = {
-            "currency": currency,
-            "operation_type": operation_type,
-            "N": N
-        }
-        return self._request_with_params(GET, DEPOSIT_WITHDRAW_HISTORIY, params)
+    def get_deposit_withdrawal_history(self, id):
+        request_path = f"{DEPOSIT_WITHDRAW_HISTORIY}/{id}"
+        return self._request_without_params(GET, request_path)
 
     # def get_deposit_history(self, txId):
     #     params = {'txId': txId, 'limit': 50}

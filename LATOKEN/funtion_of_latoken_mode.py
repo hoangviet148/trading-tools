@@ -34,8 +34,8 @@ class LATOKEN_FUNCTION:
         if keypass != None:
 
             # NHẬP KEY, SECRET của API
-            self.api_key = '6bf34c02-a263-4255-9cff-9cece36992d2'
-            self.api_secret = 'MWM0Mjk2NzYtMTEwOS00NmQ4LWE5YjctZDc5YmZhMjY0NTQx'
+            self.api_key = '1f705089-7b1c-466e-9e34-526b25a8abf7'
+            self.api_secret = 'ZGEwMzYwZTAtNzgwNC00YjliLWJhNTgtYzFhMDk1YWYxNDZk'
 
             self.FundingAPI = Funding.FundingAPI(
                 self.api_key, self.api_secret)
@@ -72,12 +72,9 @@ class LATOKEN_FUNCTION:
     def get_balances_latoken(self, currency):  # Check số dư của 1 token trên sàn
         while True:
             try:
-                res = self.FundingAPI.get_balances(currency=currency)
+                res = self.FundingAPI.get_balances(currency=currency, type_="ACCOUNT_TYPE_WALLET")
                 print("res", res)
-                if res['data']['wallet'] == []:
-                    balance = 0
-                else:
-                    balance = res['data']['wallet']['available']
+                balance = res['available']
                 break
             except:
                 time.sleep(1)
@@ -230,8 +227,8 @@ class LATOKEN_FUNCTION:
         print("price ", price)
         result = None
         try:
-            result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="BUY", quantity=Klin, type_="LIMIT", condition="GTC")
-            print("result", result)
+            result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="BUY", quantity=Klin, type_="LIMIT", condition="IOC")
+            print("=== result ===", result)
         except:
             result = sys.exc_info()
             print("result", result)
@@ -302,7 +299,7 @@ class LATOKEN_FUNCTION:
         Klin = int(amounin*10**4)/(10**4)
         print("khối lượng vào", Klin)
         try:
-            result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="BUY", quantity=Klin, type_="LIMIT", condition="GTC")
+            result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="SELL", quantity=Klin, type_="LIMIT", condition="GTC")
         except:
             print("Lỗi ", sys.exc_info())
 
@@ -424,14 +421,19 @@ class LATOKEN_FUNCTION:
         else:
             chainID = chain
         print("chainID", chainID)
-        currencyBinding = currency + '/' + chainID
+        currencyBinding = None
         try:
-            res = self.FundingAPI.get_deposit_address(currencyBinding="7d28ec03-6d1a-4586-b38d-df4b334cec1c")
-            print(f"res: {res['data']}")
-            if res['code'] == 1000:
-                return res['data']['address']
-            else:
+            res = self.FundingAPI.get_list_deposit_address(currency=currency)
+            
+            if len(res) == 0:
                 return ["No address avaiable"]
+            for re in res:
+                if re['providerName'] == chainID:
+                    currencyBinding = re['id']
+            res = self.FundingAPI.get_deposit_address(currencyBinding=currencyBinding)
+            depositAddress = res['depositAccount']['address']
+            print(f"=== res: {depositAddress}")
+            return depositAddress
         except:
             err = str(sys.exc_info())
             print("err", err)
@@ -474,75 +476,59 @@ class LATOKEN_FUNCTION:
 
     # Lấy lịch sử nạp tiền
     def get_deposit_history_latoken(self, currency, id):
-        res = self.FundingAPI.get_deposit_history(currency=currency, operation_type='deposit', N=100)
+        res = self.FundingAPI.get_deposit_withdrawal_history(id=id)
         print("res", res)
-        if res['code'] == 1000:
-            for res_dep in res['data']['records']:
-                if str(id).lower() in res_dep['deposit_id'].lower():
-                    status = res_dep['status']
-                    print("status", status)
-                    if status == 0:
-                        print("Create " + str(currency))
-                        sta = "Create.Token: " + str(currency)
-                    elif status == 1:
-                        print("Submitted, waiting for withdrawal " + str(currency))
-                        sta = "Submitted, waiting for withdrawal " + str(currency)
-                    elif status == 2:
-                        print("Processing " + str(currency))
-                        sta = "Processing " + str(currency)
-                    elif status == 3:
-                        print("Processing " + str(currency))
-                        sta = "Processing " + str(currency)
-                    elif status == 4:
-                        print("Cancel " + str(currency))
-                        sta = "Cancel " + str(currency)
-                    elif status == 5:
-                        print("Fail " + str(currency))
-                        sta = "Fail " + str(currency)
-                        break
-                return sta
+        if len(res) != 0:
+            if "DEPOSIT" in res['type']:
+                status = res['status']
+                print("status", status)
+                if status == 'TRANSACTION_STATUS_CONFIRMED':
+                    print("Create " + str(currency))
+                    sta = "Create.Token: " + str(currency)
+                elif status == 'TRANSACTION_STATUS_PENDING':
+                    print("Pending " + str(currency))
+                    sta = "Pending " + str(currency)
+            return sta
         else:
-            print("Lỗi get status deposit Bitmart")
-            return "Lỗi get status deposit Bitmart"
+            print("Lỗi get status deposit Latoken")
+            return "Lỗi get status deposit Latoken"
 
     def get_withdraw_history_latoken(self, wd_id):  # Lấy lịch sử rút tiền
-        try:
-            res = self.FundingAPI.get_withdrawal_history(operation_type='withdraw', N=100)
-            if res['code'] == 1000:
-                if res['data']['records'] == []:
-                    return ["Không có giao dịch rút tiền gần đây!"]
-            for res_wd in res['data']['records']:
-                if str(wd_id).lower() in str(res_wd['withdraw_id']).lower():
-                    state = res_wd['status']
-                    print("status", status)
-                    if res_wd['status'] == 0:
-                        sta = "Create"
-                    elif res_wd['status'] == 1:
-                        sta = "Submitted, waiting for withdrawal"
-                    elif res_wd['status'] == 2:
-                        sta = "Processing"
-                    elif res_wd['status'] == 3:
-                        sta = "Processing"
-                    elif res_wd['status'] == 4:
-                        sta = "Cancel"
-                    elif res_wd['status'] == 5:
-                        sta = "Fail"
-        except:
-            print("Lỗi request WD history Bitmart " + str(sys.exc_info()))
-            sta = "Lỗi request WD history Bitmart"
-        return sta
+        res = self.FundingAPI.get_deposit_withdrawal_history(id=id)
+        print("res", res)
+        if len(res) != 0:
+            if "WITHDRAWAL" in res['type']:
+                status = res['status']
+                print("status", status)
+                if status == 'TRANSACTION_STATUS_CONFIRMED':
+                    print("Create " + str(currency))
+                    sta = "Create.Token: " + str(currency)
+                elif status == 'TRANSACTION_STATUS_PENDING':
+                    print("Pending " + str(currency))
+                    sta = "Pending " + str(currency)
+            return sta
+        else:
+            print("Lỗi get status deposit Latoken")
+            return "Lỗi get status deposit Latoken"
 
     # Hàm rút tiền từ latoken về  ví metamask
-    def submit_token_withdrawal_latoken(self, currency, amount, destination, address):
+    def submit_token_withdrawal_latoken(self, currency, chainID, amount, destinationAddress):
         balance = self.get_balances_latoken(currency)
         status = ''
+        currencyBinding = ''
+        res = self.FundingAPI.get_list_deposit_address(currency=currency)
+        if len(res) == 0:
+            return ["No address avaiable"]
+        for re in res:
+            if re['providerName'] == chainID:
+                currencyBinding = re['id']
         if float(balance) > 0 and float(balance) >= float(amount):
             try:
                 print("size ", amount)
-                res = self.FundingAPI.coin_withdraw(currency, amount, destination, address)
+                res = self.FundingAPI.coin_withdraw(currencyBinding, amount, destinationAddress)
                 print("submit_token_withdrawal_latoken ", res)
-                if res['code'] == 1000:
-                    withdrawal_ID = res['data']['withdraw_id']
+                if res['withdrawalId']:
+                    withdrawal_ID = res['withdrawalId']
                     print("withdrawal_ID", withdrawal_ID)
                     print("Đã rút tiền chờ tiền về tài khoản!")
                     status = "Đã rút tiền chờ tiền về tài khoản!"
@@ -571,14 +557,14 @@ toollatoken = LATOKEN_FUNCTION(keypass='')
 # print(toollatoken.find_quantity_price_buy_latoken("ETH", 1, "USDT", "", "", 0.1))
 # print(toollatoken.find_quantity_price_sell_latoken("ETH", 1, "USDT", "", "", 0.1))
 
-# print(toollatoken.real_buy_in_latoken("TRX", "USDT", 2, 0, "", "", 0.5))
+print(toollatoken.real_buy_in_latoken("TRX", "USDT", 5, 0, "", "", 0.5))
 # print(toollatoken.real_sell_in_latoken("BTC", "USDT", 10, 0, "proxy", False, 5))
 
-print(toollatoken.get_deposit_address_latoken("MATIC", "Polygon"))
-# print(toollatoken.get_status_deposit_latoken("BTC")) # no
+# print(toollatoken.get_deposit_address_latoken("USDT", "ERC20"))
+# print(toollatoken.get_status_deposit_latoken("BTC"))
 # print(toollatoken.get_status_withdrawal_latoken("FTM")) # no
-# print(toollatoken.get_deposit_history_latoken("USDT", "1"))  # no
+# print(toollatoken.get_deposit_history_latoken("USDT", "aca0a1da-6c12-42e7-a64c-55fde1da28a8"))  # no
 # print(toollatoken.get_withdraw_history_latoken("1"))  # no
-# print(toollatoken.get_balances_latoken("ETH")) # no
-# print(toollatoken.submit_token_withdrawal_latoken("FTM", 1, "To Digital Address" ,"0x1EE6FA5A3803608fc22a1f3F76")) # no
+# print(toollatoken.get_balances_latoken("BTC")) # no
+# print(toollatoken.submit_token_withdrawal_latoken("USDT", "TRC20" , 5 ,"0x5a66f58a075df679e87956702c74a86dc121a79f")) # no
 # print(toollatoken.submit_token_withdrawal_latoken("USDT", 2.5, "USDT_ARB")) # no
