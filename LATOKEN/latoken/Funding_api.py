@@ -25,12 +25,14 @@ class FundingAPI(Client):
         return self._request_without_params(GET, request_path)
 
     # Get Account Configuration
-    def funds_transfer(self, nonce, asset, amount, From, to):
-        params = {"nonce": nonce, "asset": asset, "amount": amount, "from": From, "to": to}
+    def funds_transfer(self, value, currency):
+        params = {
+            "value": value,
+            "currency": currency
+        }
         return self._request_with_params(POST, FUNDS_TRANSFER, params)
 
     # Withdrawal
-
     def coin_withdraw(self, currencyBinding, amount, destinationAddress):
         params = {
             'currencyBinding': currencyBinding, 

@@ -34,8 +34,8 @@ class LATOKEN_FUNCTION:
         if keypass != None:
 
             # NHẬP KEY, SECRET của API
-            self.api_key = '1f705089-7b1c-466e-9e34-526b25a8abf7'
-            self.api_secret = 'ZGEwMzYwZTAtNzgwNC00YjliLWJhNTgtYzFhMDk1YWYxNDZk'
+            self.api_key = '60a7572a-0500-49f2-906c-3b3a06d603ab'
+            self.api_secret = 'ZGE3NTBlMjctYzc4MS00NjA4LTgzYjAtNzAxZDY3NzRmMjdl'
 
             self.FundingAPI = Funding.FundingAPI(
                 self.api_key, self.api_secret)
@@ -547,6 +547,20 @@ class LATOKEN_FUNCTION:
             status = "Không đủ tiền rút rồi!!!"
             return False, status, 0
 
+    def transfer_latoken(self, value, currency):  # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
+        try:
+            res=  self.FundingAPI.funds_transfer(value, currency)# 18:trading, 6: funding
+        except:
+            print("Lỗi transfer main to trading_latoken ", str(sys.exc_info()))
+            return "Lỗi transfer main to trading_latoken " + str(sys.exc_info())
+        if res['code'] =='0':
+            print("chuyển tiền thành công")
+            status="chuyển tiền thành công"
+        else:
+            print("Lỗi chuyển tiền OKX "+ str(res))
+            status="Lỗi chuyển tiền OKX"+ str(res)
+        return status
+
 
 toollatoken = LATOKEN_FUNCTION(keypass='')
 
@@ -557,7 +571,7 @@ toollatoken = LATOKEN_FUNCTION(keypass='')
 # print(toollatoken.find_quantity_price_buy_latoken("ETH", 1, "USDT", "", "", 0.1))
 # print(toollatoken.find_quantity_price_sell_latoken("ETH", 1, "USDT", "", "", 0.1))
 
-print(toollatoken.real_buy_in_latoken("TRX", "USDT", 5, 0, "", "", 0.5))
+# print(toollatoken.real_buy_in_latoken("TRX", "USDT", 5, 0, "", "", 0.5))
 # print(toollatoken.real_sell_in_latoken("BTC", "USDT", 10, 0, "proxy", False, 5))
 
 # print(toollatoken.get_deposit_address_latoken("USDT", "ERC20"))
@@ -568,3 +582,5 @@ print(toollatoken.real_buy_in_latoken("TRX", "USDT", 5, 0, "", "", 0.5))
 # print(toollatoken.get_balances_latoken("BTC")) # no
 # print(toollatoken.submit_token_withdrawal_latoken("USDT", "TRC20" , 5 ,"0x5a66f58a075df679e87956702c74a86dc121a79f")) # no
 # print(toollatoken.submit_token_withdrawal_latoken("USDT", 2.5, "USDT_ARB")) # no
+
+toollatoken.transfer_latoken(1, ["USDT"])
