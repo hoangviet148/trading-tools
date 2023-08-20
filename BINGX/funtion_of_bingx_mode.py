@@ -67,12 +67,17 @@ class BINGX_FUNCTION:
     def get_balances_bingx(self, currency):  # Check số dư của 1 token trên sàn
         while True:
             try:
-                res = self.FundingAPI.get_balances(currency=currency, type_="ACCOUNT_TYPE_WALLET")
+                res = self.FundingAPI.get_balances()
                 print("res", res)
-                balance = res['available']
+                for item in res['data']['balances']:
+                    if item['asset'] == currency:
+                        balance = item['free']
+                        break
                 break
             except:
                 time.sleep(1)
+                result = sys.exc_info()
+                print("result", result)
                 continue
 
         # print("balance_trading ", balance_trading)
@@ -309,21 +314,21 @@ class BINGX_FUNCTION:
         print("order_id", order_id)
         order_details = None
         for i in range(4):
-            response = self.TradeAPI.get_orders(order_id)
-            order_details = response
+            response = self.TradeAPI.get_orders(symbol, order_id)
+            order_details = response['data']
             print("get_order_details ", order_details)
             deal_price = order_details['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['quantity']
+            dealSize = order_details['origQty']
             print("dealSize", dealSize)
             status = order_details['status']
             print("status", status)
-            if 'PARTIALLY_FILLED' in status:
+            if 'PENDING' in status or 'PARTIALLY_FILLED' in status:
                 if i > 2:
                     print("Lệnh sell đang còn mở")
-                    result = self.TradeAPI.cancel_order(order_id)
+                    result = self.TradeAPI.cancel_order(symbol, order_id)
                     print("result_cancel_buy", result)
-                    if result['status'] == 'SUCCESS':
+                    if result['data']['status'] == 'CANCELED':
                         print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
                         if deal_price == '0':
                             result = "KHÔNG BÁN ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!"
@@ -471,60 +476,58 @@ class BINGX_FUNCTION:
             print(f"lỗi request {e}")
 
     # Lấy lịch sử nạp tiền
-    def get_deposit_history_bingx(self, currency, id):
-        res = self.FundingAPI.get_deposit_withdrawal_history(id=id)
+    def get_deposit_history_bingx(self, coin):
+        res = self.FundingAPI.get_deposit_history(coin=coin)
         print("res", res)
-        if len(res) != 0:
-            if "DEPOSIT" in res['type']:
-                status = res['status']
+        try:
+            for item in res:
+                status = item['status']
                 print("status", status)
-                if status == 'TRANSACTION_STATUS_CONFIRMED':
-                    print("Create " + str(currency))
-                    sta = "Create.Token: " + str(currency)
-                elif status == 'TRANSACTION_STATUS_PENDING':
-                    print("Pending " + str(currency))
-                    sta = "Pending " + str(currency)
-            return sta
-        else:
-            print("Lỗi get status deposit Latoken")
-            return "Lỗi get status deposit Latoken"
+                if status == 1:
+                    print(f"Deposit {item['amount']} {coin}, ID: {item['txId']}")
+                elif status == 0:
+                    print(f"Credited but cannot withdraw {coin}, ID: {item['txId']}")
+                elif status == 6:
+                    print(f"Pending {coin}, ID: {item['txId']}")
+        except:
+            print("Lỗi get status deposit bingx")
+            return "Lỗi get status deposit bingx"
 
-    def get_withdraw_history_bingx(self, wd_id):  # Lấy lịch sử rút tiền
-        res = self.FundingAPI.get_deposit_withdrawal_history(id=id)
+    # Lấy lịch sử rút tiền
+    def get_withdraw_history_bingx(self, coin):  
+        res = self.FundingAPI.get_withdraw_history(coin=coin)
         print("res", res)
-        if len(res) != 0:
-            if "WITHDRAWAL" in res['type']:
-                status = res['status']
+        try:
+            for item in res:
+                status = item['status']
                 print("status", status)
-                if status == 'TRANSACTION_STATUS_CONFIRMED':
-                    print("Create " + str(currency))
-                    sta = "Create.Token: " + str(currency)
-                elif status == 'TRANSACTION_STATUS_PENDING':
-                    print("Pending " + str(currency))
-                    sta = "Pending " + str(currency)
-            return sta
-        else:
-            print("Lỗi get status deposit Latoken")
-            return "Lỗi get status deposit Latoken"
+                if status == 0:
+                    print(f"Confirmation Email has been sent {item['amount']} {coin}, ID: {item['txId']}")
+                elif status == 2:
+                    print(f"Waiting for confirmation {coin}, ID: {item['txId']}")
+                elif status == 3:
+                    print(f"Rejected {coin}, ID: {item['txId']}")
+                elif status == 4:
+                    print(f"Processing {coin}, ID: {item['txId']}")
+                elif status == 5:
+                    print(f"Withdrawal transaction failed {coin}, ID: {item['txId']}")
+                elif status == 5:
+                    print(f"Withdrawal completed {coin}, ID: {item['txId']}")
+        except:
+            print("Lỗi get status withdrawal bingx")
+            return "Lỗi get status withdrawal bingx"
 
     # Hàm rút tiền từ bingx về  ví metamask
-    def submit_token_withdrawal_bingx(self, currency, chainID, amount, destinationAddress):
-        balance = self.get_balances_bingx(currency)
+    def submit_token_withdrawal_bingx(self, coin, network, amount, address, walletType):
+        balance = self.get_balances_bingx(coin)
         status = ''
-        currencyBinding = ''
-        res = self.FundingAPI.get_list_deposit_address(currency=currency)
-        if len(res) == 0:
-            return ["No address avaiable"]
-        for re in res:
-            if re['providerName'] == chainID:
-                currencyBinding = re['id']
         if float(balance) > 0 and float(balance) >= float(amount):
             try:
                 print("size ", amount)
-                res = self.FundingAPI.coin_withdraw(currencyBinding, amount, destinationAddress)
+                res = self.FundingAPI.coin_withdraw(coin=coin, network=network, amount=amount, address=address, walletType=walletType)
                 print("submit_token_withdrawal_bingx ", res)
-                if res['withdrawalId']:
-                    withdrawal_ID = res['withdrawalId']
+                if res['data']['id']:
+                    withdrawal_ID = res['data']['id']
                     print("withdrawal_ID", withdrawal_ID)
                     print("Đã rút tiền chờ tiền về tài khoản!")
                     status = "Đã rút tiền chờ tiền về tài khoản!"
@@ -543,13 +546,14 @@ class BINGX_FUNCTION:
             status = "Không đủ tiền rút rồi!!!"
             return False, status, 0
 
-    def transfer_bingx(self, value, currency):  # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
+    # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
+    def transfer_bingx(self, type_, asset, amount):  
         try:
-            res=  self.FundingAPI.funds_transfer(value, currency)# 18:trading, 6: funding
+            res=  self.FundingAPI.funds_transfer(type_=type_, asset=asset, amount=amount)
         except:
             print("Lỗi transfer main to trading_bingx ", str(sys.exc_info()))
             return "Lỗi transfer main to trading_bingx " + str(sys.exc_info())
-        if res['code'] =='0':
+        if res['tranId']:
             print("chuyển tiền thành công")
             status="chuyển tiền thành công"
         else:
@@ -561,6 +565,7 @@ class BINGX_FUNCTION:
 toolbingx = BINGX_FUNCTION(keypass='')
 
 # toolbingx.get_depth_bingx("BTC", "USDT", "", "")
+
 # temp = toolbingx.get_return_buy_bingx(symbol="ETH", usd="USDT", amountin=1, proxy="", fake_ip=False)
 # temp = toolbingx.get_return_sell_bingx(symbol="ETH", usd="USDT", amountin=1, proxy="", fake_ip=False)
 
@@ -568,16 +573,28 @@ toolbingx = BINGX_FUNCTION(keypass='')
 # temp = toolbingx.find_quantity_price_sell_bingx("ETH", 1, "USDT", "", "", 0.1)
 
 # temp = toolbingx.real_buy_in_bingx("MATIC", "USDT", 7, 0, "", "", 0.1)
-print(toolbingx.real_sell_in_bingx("BTC", "USDT", 10, 0, "proxy", False, 5))
+# temp = toolbingx.real_sell_in_bingx("MATIC", "USDT", 9, 0, "", "", 0.1)
 
-# print(toolbingx.get_deposit_address_bingx("USDT", "ERC20"))
+# temp = toolbingx.get_deposit_address_bingx("USDT", "ERC20")
 # print(toolbingx.get_status_deposit_bingx("BTC"))
-# print(toolbingx.get_status_withdrawal_bingx("FTM")) # no
-# print(toolbingx.get_deposit_history_bingx("USDT", "aca0a1da-6c12-42e7-a64c-55fde1da28a8"))  # no
-# print(toolbingx.get_withdraw_history_bingx("1"))  # no
-# print(toolbingx.get_balances_bingx("BTC")) # no
-# print(toolbingx.submit_token_withdrawal_bingx("USDT", "TRC20" , 5 ,"0x5a66f58a075df679e87956702c74a86dc121a79f")) # no
-# print(toolbingx.submit_token_withdrawal_bingx("USDT", 2.5, "USDT_ARB")) # no
+# temp = toolbingx.get_status_withdrawal_bingx("USDT") # no
+# temp = toolbingx.get_deposit_history_bingx("USDT")
+# temp = toolbingx.get_withdraw_history_bingx("USDT")
+# temp = toolbingx.get_balances_bingx("USDT")
+# temp = toolbingx.submit_token_withdrawal_bingx("USDT", "Polygon", 10, "0x5a66f58a075df679e87956702c74a86dc121a79f", 1)
 
-# toolbingx.transfer_bingx(1, ["USDT"])
+'''
+FUND_SFUTURES
+Funding Account->Standard Contract
+SFUTURES_FUND
+Standard Contract->Funding Account
+FUND_PFUTURES
+Funding Account->Perpetual Futures
+PFUTURES_FUND
+Perpetual Futures->Funding Account
+SFUTURES_PFUTURES
+Standard Contract->Perpetual Futures
+PFUTURES_SFUTURES
+'''
+temp = toolbingx.transfer_bingx("FUND_SFUTURES", "USDT", 1)
 print(temp)
