@@ -1,7 +1,7 @@
 # http header
 API_URL = 'https://sapi.xt.com'
 
-CONTENT_TYPE = 'Content-Type'
+CONTENT_TYPE = 'application/json'
 ACCESS_KEY = 'validate-appkey'
 ACCESS_SIGN = 'validate-signature'
 RECVWINDOW = 'validate-recvwindow'

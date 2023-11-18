@@ -34,7 +34,7 @@ def pre_hash(timestamp, method, request_path, body):
 
 def get_header(api_key, sign, timestamp):
     header = dict()
-    header[c.CONTENT_TYPE] = c.CONTENT_TYPE
+    header[c.CONTENT_TYPE] = 'application/json'
     header[c.ACCESS_KEY] = api_key
     header[c.ACCESS_SIGN] = sign
     header[c.DIGEST] = "HmacSHA256"
