@@ -34,9 +34,8 @@ class Client(object):
         body = json.dumps(params)
 
         sign = utils.sign(params, self.SECRET_KEY, self.API_KEY)
-    
         header = utils.get_header(self.API_KEY, sign, timestamp)
-       
+
         # send request
         response = None
         print("url:", url)
@@ -45,7 +44,7 @@ class Client(object):
 
         if method == c.GET:
             response = requests.get(url, headers=header)
-            print(f"response get === {response.json()} - {response.status_code}")
+            # print(f"response get === {response.json()} - {response.status_code}")
         elif method == c.POST:
             try:
                 response = requests.post(url, headers=header, data=body)

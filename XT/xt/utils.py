@@ -6,21 +6,31 @@ from . import consts as c
 import hashlib
 import json
 import urllib.parse
-
+from urllib.parse import quote
 
 def clean_dict_none(d: dict) -> dict:
     return {k:d[k] for k in d.keys() if d[k] != None}
 
 
 def sign(payload, secret_key, api_key):
-    if not all([payload.get('accesskey'), payload.get('nonce')]):
-        payload['accesskey'] = api_key
-        payload['nonce']  = str(int(time.time() * 1000))
-        # Need sorted
-        payload = urllib.parse.urlencode(dict(sorted(payload.items(), key = lambda kv:(kv[0], kv[1]))))
-    print("payload: ", payload)
-    
-    signature = hmac.new(secret_key.encode('utf-8'), payload.encode('utf-8'), hashlib.sha256).hexdigest().upper()
+    path = "/v4/deposit/address"
+    query_data = ""
+    body_data = json.dumps(payload)
+    method = "GET"
+    print("test: ", body_data, type(body_data))
+    concatenated_data = f"#{method}#{path}#{body_data}"
+    timestamp = str(int(time.time() * 1000))
+    headers = {
+        'validate-algorithms': 'HmacSHA256',
+        'validate-appkey': api_key,
+        'validate-recvwindow': '5000',
+        'validate-timestamp': timestamp
+    }
+    header_string = '&'.join([f"{key}={quote(str(headers[key]))}" for key in sorted(headers.keys())])
+    original_data = f"{header_string}{concatenated_data}"
+    print("original_data: ", original_data)
+    signature = hmac.new(secret_key.encode(), original_data.encode(), hashlib.sha256).hexdigest()
+
     return signature
 
 def pre_substring(timestamp, memo, body):
