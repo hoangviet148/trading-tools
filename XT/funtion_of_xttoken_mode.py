@@ -34,8 +34,8 @@ class xt_FUNCTION:
         if keypass != None:
 
             # NHẬP KEY, SECRET của API
-            self.api_key = '1b63b469-30ed-4d17-9436-43e3d6dec6ce'
-            self.api_secret = 'e9afbc48bdf5e7158c1270c9e804131f1a77d6ab'
+            self.api_key = ''
+            self.api_secret = ''
 
             self.FundingAPI = Funding.FundingAPI(
                 self.api_key, self.api_secret)
