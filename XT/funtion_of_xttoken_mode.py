@@ -72,9 +72,10 @@ class xt_FUNCTION:
     def get_balances_xt(self, currency):  # Check số dư của 1 token trên sàn
         while True:
             try:
-                res = self.FundingAPI.get_balances(currency=currency, type_="ACCOUNT_TYPE_WALLET")
+                currency = currency.lower()
+                res = self.FundingAPI.get_balances(currency=currency)
                 print("res", res)
-                balance = res['available']
+                balance = res['result']['availableAmount']
                 break
             except:
                 time.sleep(1)
@@ -194,7 +195,8 @@ class xt_FUNCTION:
                 total_return = float(total_volume) - \
                     float(ask[1]) + tien_con_thieu/float(ask[0])
                 print("total_return", total_return)
-                return price_find, total_return*(100-0.1)/100
+                # return price_find, total_return*(100-0.1)/100
+                return price_find, total_return
         if float(price_find) > price_start*(1+float(truotgiasan)/100):
             print("SOS xt -buy " + str(symbol) +
                   str(price_find)+" " + str(price_start))
@@ -228,21 +230,21 @@ class xt_FUNCTION:
             price = f'{price:.20f}'
         else:
             price = price
-        Klin = int(quantity*10**3)/(10**3)
-        print("Klin ", Klin)
-        print("price ", price)
+        print("quantity: ", quantity)
+        Klin = int(quantity*10**1)/(10**1)
         result = None
         try:
             result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="BUY", quantity=Klin, type_="LIMIT", condition="IOC")
-            print("result: ", result.status_code)
+            print("result: ", result)
+            # print("result: ", result.status_code)
             print("=== result ===", result) 
         except:
             result = sys.exc_info()
             print("result", result)
             return 
         
-        if result['status'] == "SUCCESS":
-            order_id = result['id']
+        if result['result']['orderId'] != None:
+            order_id = result['result']['orderId']
             print("Đã đặt lệnh thành công")
         else:
             print("Lỗi rồi.....", result)
@@ -254,18 +256,18 @@ class xt_FUNCTION:
             response = self.TradeAPI.get_orders(order_id)
             order_details = response
             print("get_order_details ", order_details)
-            deal_price = order_details['price']
+            deal_price = order_details['result']['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['quantity']
+            dealSize = order_details['result']['executedQty']
             print("dealSize", dealSize)
-            status = order_details['status']
+            status = order_details['result']['state']
             print("status", status)
-            if 'ORDER_STATUS_REJECTED' in status or 'ORDER_STATUS_CLOSED' in status:
+            if 'CANCELED' == status or 'REJECTED' == status:
                 if i > 2:
                     print("Lệnh đang buy market còn mở")
                     result = self.TradeAPI.cancel_order(order_id)
                     print("result_cancel_buy", result)
-                    if result['status'] == 'SUCCESS':
+                    if result['result']['cancelId'] != None:
                         print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
                         if deal_price == '0':
                             result = "KHÔNG MUA ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!"
@@ -303,15 +305,15 @@ class xt_FUNCTION:
                   " < amoutoutmin" + str(amoutoutmin))
             return "Bé hơn amoutoutmin rồi!!!"
 
-        Klin = int(amounin*10**4)/(10**4)
+        Klin = int(amounin*10**1)/(10**1)
         print("khối lượng vào", Klin)
         try:
             result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="SELL", quantity=Klin, type_="LIMIT", condition="GTC")
         except:
             print("Lỗi ", sys.exc_info())
 
-        if result['status'] == "SUCCESS":
-            order_id = result['id']
+        if result['result']['orderId'] != None:
+            order_id = result['result']['orderId']
             print("Đã đặt lệnh thành công")
         else:
             print("Lỗi rồi.....", result)
@@ -323,18 +325,18 @@ class xt_FUNCTION:
             response = self.TradeAPI.get_orders(order_id)
             order_details = response
             print("get_order_details ", order_details)
-            deal_price = order_details['price']
+            deal_price = order_details['result']['price']
             print("deal_fund", deal_price)
-            dealSize = order_details['quantity']
+            dealSize = order_details['result']['executedQty']
             print("dealSize", dealSize)
-            status = order_details['status']
+            status = order_details['result']['state']
             print("status", status)
-            if 'ORDER_STATUS_REJECTED' in status or 'ORDER_STATUS_CLOSED' in status:
+            if 'CANCELED' == status or 'REJECTED' == status:
                 if i > 2:
                     print("Lệnh sell đang còn mở")
                     result = self.TradeAPI.cancel_order(order_id)
                     print("result_cancel_buy", result)
-                    if result['status'] == 'SUCCESS':
+                    if result['result']['cancelId'] != None:
                         print("ĐÃ HỦY LỆNH THÀNH CÔNG!!!")
                         if deal_price == '0':
                             result = "KHÔNG BÁN ĐƯỢC__ĐÃ HỦY LỆNH THÀNH CÔNG!!!"
@@ -377,7 +379,8 @@ class xt_FUNCTION:
                 total_return = sum_value_bids - \
                     float(bid[0])*float(bid[1]) + tien_con_thieu*float(bid[0])
                 print("total_return", total_return)
-                return price_find, total_return*(100-0.1)/100
+                return price_find, total_return
+                # return price_find, total_return*(100-0.1)/100   # nếu return như này thì sẽ bị lỗi: The order price or quantity precision is abnormal
             # print("price", price_find )
         if float(price_find) < price_start/(1+float(truotgiasan)/100):
             print("SOS " + str(price_find)+" " + str(price_start))
@@ -408,23 +411,23 @@ class xt_FUNCTION:
     def get_deposit_address_xt(self, currency, chain):
         currency = currency.upper()
         if chain == "Polygon":
-            chainID = "MATIC"
+            chainID = "Polygon"
         elif chain == "OPT":
-            chainID = "OPTIMISM"
+            chainID = "OPT"
         elif chain == "TRON":
-            chainID = "TRX"
+            chainID = "TRON"
         elif chain == "AVAX":
             chainID = "AVAX"
         elif chain == "ETH":
-            chainID = "ARBI"
+            chainID = "Ethereum"
         elif chain == "FTM":
             chainID = "Fantom"
         elif chain == "SOL":
-            chainID = "SOL"
+            chainID = "SOL-SOL"
         elif chain == "KLAY":
             chainID = "Klaytn"
         elif chain == "ARB":
-            chainID = "Arbitrum"
+            chainID = "ARB"
         else:
             chainID = chain
         print("chainID", chainID)
@@ -437,10 +440,10 @@ class xt_FUNCTION:
             # for re in res:
             #     if re['providerName'] == chainID:
             #         currencyBinding = re['id']
-        res = self.FundingAPI.get_deposit_address(chain='Bitcoin', currency="BTC")
+        res = self.FundingAPI.get_deposit_address(chain=chainID, currency=currency)
         print("res: ", res)
-        depositAddress = res['depositAccount']['address']
-        print(f"=== res: {depositAddress}")
+        depositAddress = res['result']['address']
+        # print(f"=== res: {depositAddress}")
         return depositAddress
         # except:
         #     err = str(sys.exc_info())
@@ -449,72 +452,107 @@ class xt_FUNCTION:
         #     return ["No address avaiable"]
 
     # Lấy trạng thái khả dụng hay bị dừng nạp tiền của 1 token
-    def get_status_deposit_xt(self, currency):
-        currency = currency.upper()
-        try:
-            res = self.FundingAPI.get_currency()
-            for item in res['data']['currencies']:
-                if currency == item['currency']:
-                    # print(item['supportDeposit'])
-                    if item['deposit_enabled'] != True:
-                        print("Tạm dừng nạp tiền rồi. Token ", currency)
-                        return None
-                    else:
-                        return "Nạp tiền bình thường. Token " + str(currency)
-        except Exception as e:
-            print(f"lỗi request {e}")
+    def get_status_deposit_xt(self, currency, chain):
+        currency = currency.lower()
+        if chain == "Polygon":
+            chainID = "Polygon"
+        elif chain == "OPT":
+            chainID = "OPT"
+        elif chain == "TRON":
+            chainID = "TRON"
+        elif chain == "AVAX":
+            chainID = "AVAX"
+        elif chain == "ETH":
+            chainID = "Ethereum"
+        elif chain == "FTM":
+            chainID = "Fantom"
+        elif chain == "SOL":
+            chainID = "SOL-SOL"
+        elif chain == "KLAY":
+            chainID = "Klaytn"
+        elif chain == "ARB":
+            chainID = "ARB"
+        else:
+            chainID = chain
+        print("currency: ", currency)
+        # try:
+        res = self.FundingAPI.get_currency()
+        for item in res['result']:
+            if currency.lower() == item['currency'].lower():
+                for chain in item['supportChains']:
+                    if chain['chain'] == chainID:
+                        if chain['depositEnabled'] != True:
+                            result_str = f"Tạm dừng nạp tiền rồi. Token {currency}. Chain {chainID}"
+                            print(result_str)
+                            return None
+                        else:
+                            return f"Nạp tiền bình thường. Token {currency}. Chain {chainID}"
+        # except Exception as e:
+        #     print(f"lỗi request {e}")
 
     # Lấy trạng thái khả dụng hay bị dừng rút tiền
-    def get_status_withdrawal_xt(self, currency):
-        currency = currency.upper()
+    def get_status_withdrawal_xt(self, currency, chain):
+        currency = currency.lower()
+        if chain == "Polygon":
+            chainID = "Polygon"
+        elif chain == "OPT":
+            chainID = "OPT"
+        elif chain == "TRON":
+            chainID = "TRON"
+        elif chain == "AVAX":
+            chainID = "AVAX"
+        elif chain == "ETH":
+            chainID = "Ethereum"
+        elif chain == "FTM":
+            chainID = "Fantom"
+        elif chain == "SOL":
+            chainID = "SOL-SOL"
+        elif chain == "KLAY":
+            chainID = "Klaytn"
+        elif chain == "ARB":
+            chainID = "ARB"
+        else:
+            chainID = chain
         try:
             res = self.FundingAPI.get_currency()
-            for item in res['data']['currencies']:
-                if currency == item['currency']:
-                    # print(item['supportWithdraw'])
-                    status = item['withdraw_enabled']
-                    if status != True:
-                        print("Tạm dừng rút tiền rồi ", currency)
-                        return None
-                    else:
-                        minWithdrawSingle = item['withdraw_minsize']
-                        return status, minWithdrawSingle
+            for item in res['result']:
+                if currency.lower() == item['currency'].lower():
+                    for chain in item['supportChains']:
+                        if chain['chain'] == chainID:
+                            status = chain['withdrawEnabled']
+                            if status != True:
+                                result_str = f"Tạm dừng rút tiền rồi. Token {currency}. Chain {chainID}"
+                                print(result_str)
+                                return None
+                            else:
+                                minWithdrawSingle = chain['withdrawMinAmount']
+                                return status, minWithdrawSingle
         except Exception as e:
             print(f"lỗi request {e}")
 
     # Lấy lịch sử nạp tiền
-    def get_deposit_history_xt(self, currency, id):
-        res = self.FundingAPI.get_deposit_withdrawal_history(id=id)
-        print("res", res)
-        if len(res) != 0:
-            if "DEPOSIT" in res['type']:
-                status = res['status']
-                print("status", status)
-                if status == 'TRANSACTION_STATUS_CONFIRMED':
-                    print("Create " + str(currency))
-                    sta = "Create.Token: " + str(currency)
-                elif status == 'TRANSACTION_STATUS_PENDING':
-                    print("Pending " + str(currency))
-                    sta = "Pending " + str(currency)
-            return sta
-        else:
+    def get_deposit_history_xt(self, currency):
+        res = self.FundingAPI.get_deposit_withdrawal_history()
+        currency = currency.lower()
+        print("res: ", res)
+        if res['result']['items'] != None:
+            for item in res['result']['items']:
+                if currency == item['currency']:
+                    status = item['status']
+                    print(f"Deposit {item['amount']} {currency}, ID: {item['id']}, TransactionID: {item['transactionId']}, status: {status}")
+        else:   
             print("Lỗi get status deposit xt")
             return "Lỗi get status deposit xt"
 
-    def get_withdraw_history_xt(self, wd_id):  # Lấy lịch sử rút tiền
-        res = self.FundingAPI.get_deposit_withdrawal_history(id=id)
+    def get_withdraw_history_xt(self, currency):  # Lấy lịch sử rút tiền
+        currency = currency.lower()
+        res = self.FundingAPI.get_withdrawal_history()
         print("res", res)
-        if len(res) != 0:
-            if "WITHDRAWAL" in res['type']:
-                status = res['status']
-                print("status", status)
-                if status == 'TRANSACTION_STATUS_CONFIRMED':
-                    print("Create " + str(currency))
-                    sta = "Create.Token: " + str(currency)
-                elif status == 'TRANSACTION_STATUS_PENDING':
-                    print("Pending " + str(currency))
-                    sta = "Pending " + str(currency)
-            return sta
+        if res['result']['items'] != None:
+            for item in res['result']['items']:
+                if currency == item['currency']:
+                    status = item['status']
+                    print(f"Withdraw {item['amount']} {currency}, ID: {item['id']}, TransactionID: {item['transactionId']}, status: {status}")
         else:
             print("Lỗi get status deposit xt")
             return "Lỗi get status deposit xt"
@@ -522,28 +560,29 @@ class xt_FUNCTION:
     # Hàm rút tiền từ xt về  ví metamask
     def submit_token_withdrawal_xt(self, currency, chainID, amount, destinationAddress):
         balance = self.get_balances_xt(currency)
+        print("balance: ", balance)
         status = ''
         currencyBinding = ''
-        res = self.FundingAPI.get_list_deposit_address(currency=currency)
-        if len(res) == 0:
-            return ["No address avaiable"]
-        for re in res:
-            if re['providerName'] == chainID:
-                currencyBinding = re['id']
+        # res = self.FundingAPI.get_list_deposit_address(currency=currency)
+        # if len(res) == 0:
+        #     return ["No address avaiable"]
+        # for re in res:
+        #     if re['providerName'] == chainID:
+        #         currencyBinding = re['id']
         if float(balance) > 0 and float(balance) >= float(amount):
             try:
-                print("size ", amount)
-                res = self.FundingAPI.coin_withdraw(currencyBinding, amount, destinationAddress)
+                print("size: ", amount)
+                res = self.FundingAPI.coin_withdraw(currency, chainID, amount, destinationAddress)
                 print("submit_token_withdrawal_xt ", res)
-                if res['withdrawalId']:
-                    withdrawal_ID = res['withdrawalId']
+                if res['result']['id']:
+                    withdrawal_ID = res['result']['id']
                     print("withdrawal_ID", withdrawal_ID)
                     print("Đã rút tiền chờ tiền về tài khoản!")
                     status = "Đã rút tiền chờ tiền về tài khoản!"
                     return True, status, withdrawal_ID
                 else:
-                    print("Rút tiền thất bại! " + str(res['message']))
-                    status = res['message']
+                    print("Rút tiền thất bại! " + str(res['mc']))
+                    status = res['mc']
                     return False, status, 0
             except:
                 err = str(sys.exc_info())
@@ -555,13 +594,15 @@ class xt_FUNCTION:
             status = "Không đủ tiền rút rồi!!!"
             return False, status, 0
 
-    def transfer_xt(self, value, currency):  # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
+    def transfer_xt(self, bizId, source, to, currency, symbol, amount):  # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
         try:
-            res=  self.FundingAPI.funds_transfer(value, currency)# 18:trading, 6: funding
+            currency = currency.lower()
+            res=  self.FundingAPI.funds_transfer(bizId, source, to, currency, symbol, amount)# 18:trading, 6: funding
+            print("res: ", res)
         except:
             print("Lỗi transfer main to trading_xt ", str(sys.exc_info()))
             return "Lỗi transfer main to trading_xt " + str(sys.exc_info())
-        if res['code'] =='0':
+        if res['mc'] == 'SUCCESS':
             print("chuyển tiền thành công")
             status="chuyển tiền thành công"
         else:
@@ -572,24 +613,29 @@ class xt_FUNCTION:
 
 toolxt = xt_FUNCTION(keypass='')
 
-#print(toolxt.get_depth_xt("btc", "usdt", "", "")) done
-# print(toolxt.get_return_buy_xt(symbol="btc", usd="usdt", amountin=, proxy="", fake_ip=False)) done
+# print(toolxt.get_depth_xt("btc", "usdt", "", "")) #done
+# print(toolxt.get_return_buy_xt(symbol="btc", usd="usdt", amountin=1, proxy="", fake_ip=False)) #done
 
-# print(toolxt.get_return_sell_xt(symbol="btc", usd="usdt", amountin=1, proxy="", fake_ip=False)) done
+# print(toolxt.get_return_sell_xt(symbol="btc", usd="usdt", amountin=1, proxy="", fake_ip=False)) #done
 
-# print(toolxt.find_quantity_price_buy_xt("btc", 1, "usdt", "", "", 0.1)) done
-# print(toolxt.find_quantity_price_sell_xt("btc", 1, "usdt", "", "", 0.1)) done
+# print(toolxt.find_quantity_price_buy_xt("vsys", 3, "usdt", "", "", 0.1)) #done
+# print(toolxt.find_quantity_price_sell_xt("btc", 1, "usdt", "", "", 0.1)) #done
 
-# print(toolxt.real_buy_in_xt("trx", "usdt", 0.1, 0, "", "", 0.5)) 
-# print(toolxt.real_sell_in_xt("BTC", "USDT", 10, 0, "proxy", False, 5))
+# print(toolxt.real_buy_in_xt("ada", "usdt", 2, 0, "", "", 0.1)) #done
+# print(toolxt.real_sell_in_xt("ada", "usdt", 5.34, 0, "", False, 5)) #done
 
-print(toolxt.get_deposit_address_xt("USDT", "ETH"))
-# print(toolxt.get_status_deposit_xt("BTC"))
-# print(toolxt.get_status_withdrawal_xt("FTM")) # no
-# print(toolxt.get_deposit_history_xt("USDT", "aca0a1da-6c12-42e7-a64c-55fde1da28a8"))  # no
-# print(toolxt.get_withdraw_history_xt("1"))  # no
-# print(toolxt.get_balances_xt("BTC")) # no
-# print(toolxt.submit_token_withdrawal_xt("USDT", "TRC20" , 5 ,"0x5a66f58a075df679e87956702c74a86dc121a79f")) # no
+# print(toolxt.get_deposit_address_xt("USDT", "SOL")) #done
+
+# print(toolxt.get_status_deposit_xt("usdt", "ETH")) #done 
+# print(toolxt.get_status_withdrawal_xt("usdt", "ETH")) # done
+
+# print(toolxt.get_deposit_history_xt("USDT"))  # done
+# print(toolxt.get_withdraw_history_xt("usdt"))  # done
+# print(toolxt.get_balances_xt("usdt")) #done
+
+# print(toolxt.submit_token_withdrawal_xt("usdt", "Polygon" , 10, "0x09a1e5cE84299aA2378b861F56467708F70640AB")) # done
 # print(toolxt.submit_token_withdrawal_xt("USDT", 2.5, "USDT_ARB")) # no
 
-# toolxt.transfer_xt(1, ["USDT"])
+# Nếu chuyển từ spot sang future thì phải thêm symbol, example: xt_usdt
+# toolxt.transfer_xt("1233423423dcsdfeadeadeqasdsdfasdsewaddfddceceqcw", "SPOT", "LEVER", "usdt", "xt_usdt", 3) done
+# toolxt.transfer_xt("1233423423dcsdfeadeadedssfasdsewaddfddceceqcw", "FINANCE", "SPOT", "usdt", "", 3) done

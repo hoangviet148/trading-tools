@@ -20,44 +20,57 @@ class FundingAPI(Client):
         return self._request_with_params(GET, DEPOSIT_ADDRESS, params)
 
     # Get Balance
-    def get_balances(self, currency, type_):
-        request_path = f"{GET_BALANCES}/{currency}/{type_}"
+    def get_balances(self, currency):
+        request_path = f"/v4/balance"
+        params = {
+            "currency": currency
+        }
         print(f"test=== {request_path}")
-        return self._request_without_params(GET, request_path)
+        return self._request_with_params(GET, request_path, params)
 
     # Get Account Configuration
-    def funds_transfer(self, value, currency):
+    def funds_transfer(self, bizId, source, to, currency, symbol, amount):
         params = {
-            "value": value,
-            "currency": currency
+            "bizId": bizId,
+            "from": source,
+            "to": to,
+            "currency": currency,
+            "symbol": symbol,
+            "amount": amount
         }
         return self._request_with_params(POST, FUNDS_TRANSFER, params)
 
     # Withdrawal
-    def coin_withdraw(self, currencyBinding, amount, destinationAddress):
+    def coin_withdraw(self, currency, chain, amount, destinationAddress):
         params = {
-            'currencyBinding': currencyBinding, 
+            'currency': currency, 
+            'chain': chain,
             'amount': amount, 
-            'recipientAddress': destinationAddress
+            'address': destinationAddress
         }
         return self._request_with_params(POST, WITHDRAWAL_COIN, params)
 
     # Get Deposit History
-    def get_deposit_withdrawal_history(self, id):
-        request_path = f"{DEPOSIT_WITHDRAW_HISTORIY}/{id}"
+    def get_deposit_withdrawal_history(self):
+        request_path = f"{DEPOSIT_WITHDRAW_HISTORIY}"
         return self._request_without_params(GET, request_path)
+
+    def get_withdrawal_history(self):
+        request_path = f"{WITHDRAW_HISTORIY}"
+        return self._request_without_params(GET, request_path)
+
 
     # def get_deposit_history(self, txId):
     #     params = {'txId': txId, 'limit': 50}
     #     return self._request_with_params(GET, DEPOSIT_HISTORIY, params)
 
     # Get Withdrawal History
-    def get_withdrawal_history(self, operation_type, N):
-        params = {
-            "operation_type": operation_type,
-            "N": N
-        }
-        return self._request_with_params(GET, DEPOSIT_WITHDRAW_HISTORIY, params)
+    # def get_withdrawal_history(self, operation_type, N):
+    #     params = {
+    #         "operation_type": operation_type,
+    #         "N": N
+    #     }
+    #     return self._request_with_params(GET, DEPOSIT_WITHDRAW_HISTORIY, params)
 
     # def get_withdrawal_history(self, wdId):
     #     params = {'wdId': wdId}

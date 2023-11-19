@@ -27,11 +27,13 @@ class TradeAPI(Client):
         return self._request_with_params(POST, BATCH_ORDERS, orders_data)
 
     # Cancel Order
-    def cancel_order(self, order_id=None):
-        params = {
-            'id': order_id
-        }
-        return self._request_with_params(POST, CANCEL_ORDER, params)
+    def cancel_order(self, order_id):
+        request_path = f"{CANCEL_ORDER}/{order_id}"
+        return self._request_without_params('DELETE', request_path)
+        # params = {
+        #     'id': order_id
+        # }
+        # return self._request_with_params(POST, CANCEL_ORDER, params)
 
     # Cancel Multiple Orders
     def cancel_multiple_orders(self, orders_data):
@@ -55,7 +57,7 @@ class TradeAPI(Client):
         return self._request_with_params(POST, CLOSE_POSITION, params)
 
     # Get Order Details
-    def get_orders(self, order_id=None):
+    def get_orders(self, order_id):
         request_path = f"{ORDER_INFO}/{order_id}"
         return self._request_without_params(GET, request_path)
 

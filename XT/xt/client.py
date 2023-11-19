@@ -7,6 +7,7 @@ import hmac
 import base64
 from urllib import parse
 
+
 class Client(object):
 
     def __init__(self, api_key, secret_key):
@@ -33,7 +34,7 @@ class Client(object):
         timestamp = utils.get_timestamp()
         body = json.dumps(params)
 
-        sign = utils.sign(params, self.SECRET_KEY, self.API_KEY)
+        sign = utils.sign(method, request_path, params, self.SECRET_KEY, self.API_KEY)
         header = utils.get_header(self.API_KEY, sign, timestamp)
 
         # send request
