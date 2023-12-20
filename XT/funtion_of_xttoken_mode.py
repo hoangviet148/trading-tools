@@ -34,8 +34,8 @@ class xt_FUNCTION:
         if keypass != None:
 
             # NHẬP KEY, SECRET của API
-            self.api_key = '1b63b469-30ed-4d17-9436-43e3d6dec6ce'
-            self.api_secret = 'e9afbc48bdf5e7158c1270c9e804131f1a77d6ab'
+            self.api_key = ''
+            self.api_secret = ''
 
             self.FundingAPI = Funding.FundingAPI(
                 self.api_key, self.api_secret)
@@ -236,6 +236,8 @@ class xt_FUNCTION:
         try:
             result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="BUY", quantity=Klin, type_="LIMIT", condition="IOC")
             print("result: ", result)
+            if result['rc'] != 0:
+                raise Exception("Error code: ", result['mc'])
             # print("result: ", result.status_code)
             print("=== result ===", result) 
         except:
@@ -243,6 +245,7 @@ class xt_FUNCTION:
             print("result", result)
             return 
         
+
         if result['result']['orderId'] != None:
             order_id = result['result']['orderId']
             print("Đã đặt lệnh thành công")
@@ -621,20 +624,19 @@ print(toolxt.get_return_buy_xt(symbol="etc", usd="usdt", amountin=1, proxy="", f
 # print(toolxt.find_quantity_price_buy_xt("vsys", 3, "usdt", "", "", 0.1)) #done
 # print(toolxt.find_quantity_price_sell_xt("btc", 1, "usdt", "", "", 0.1)) #done
 
-# print(toolxt.real_buy_in_xt("ada", "usdt", 2, 0, "", "", 0.1)) #done
+# print(toolxt.real_buy_in_xt("vsys", "usdt", 0.5, 0, "", "", 0.1)) #done
 # print(toolxt.real_sell_in_xt("ada", "usdt", 5.34, 0, "", False, 5)) #done
 
 # print(toolxt.get_deposit_address_xt("USDT", "SOL")) #done
 
 # print(toolxt.get_status_deposit_xt("usdt", "ETH")) #done 
-# print(toolxt.get_status_withdrawal_xt("usdt", "ETH")) # done
+# print(toolxt.get_status_withdrawal_xt("usdt", "Polygon")) # done
 
 # print(toolxt.get_deposit_history_xt("USDT"))  # done
 # print(toolxt.get_withdraw_history_xt("usdt"))  # done
 # print(toolxt.get_balances_xt("usdt")) #done
 
 # print(toolxt.submit_token_withdrawal_xt("usdt", "Polygon" , 10, "0x09a1e5cE84299aA2378b861F56467708F70640AB")) # done
-# print(toolxt.submit_token_withdrawal_xt("USDT", 2.5, "USDT_ARB")) # no
 
 # Nếu chuyển từ spot sang future thì phải thêm symbol, example: xt_usdt
 # toolxt.transfer_xt("1233423423dcsdfeadeadeqasdsdfasdsewaddfddceceqcw", "SPOT", "LEVER", "usdt", "xt_usdt", 3) done

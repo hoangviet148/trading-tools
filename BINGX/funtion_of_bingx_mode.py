@@ -33,8 +33,8 @@ class BINGX_FUNCTION:
         if keypass != None:
 
             # NHẬP KEY, SECRET của API
-            self.api_key = 'HsGgQmTQkgR1iEWQnzKmFlWNBoMRVYBgSKjBRTlnNXKfOlBq0FUpVWLz09MGMa2bQgLtpfHqZ7XrrNWegGfg'
-            self.api_secret = 'kUydvdJ1WPo5RsIl9CumyMqBi2BSr9Q1MjNkk9ghFlHyMgZMzd6EqLR8tbZpA5kbsvOZWof9qAnaFhUt9A'
+            self.api_key = ''
+            self.api_secret = ''
 
             self.FundingAPI = Funding.FundingAPI(self.api_key, self.api_secret)
             self.TradeAPI = Trade.TradeAPI(self.api_key, self.api_secret)
