@@ -10,13 +10,13 @@ from unittest import result
 import os
 # import pandas as pd
 
-import xt.Account_api as Account
-import xt.Funding_api as Funding
-import xt.Market_api as Market
-import xt.Public_api as Public
-import xt.Trade_api as Trade
-import xt.subAccount_api as SubAccount
-import xt.status_api as Status
+import bitrue.Account_api as Account
+import bitrue.Funding_api as Funding
+import bitrue.Market_api as Market
+import bitrue.Public_api as Public
+import bitrue.Trade_api as Trade
+import bitrue.subAccount_api as SubAccount
+import bitrue.status_api as Status
 
 import logging
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -28,7 +28,7 @@ path_file = os.path.dirname(os.path.abspath(__file__))
 flag = '0'
 
 
-class xt_FUNCTION:
+class bitrue_FUNCTION:
     def __init__(self, keypass=None):
         print("Init")
         if keypass != None:
@@ -69,7 +69,7 @@ class xt_FUNCTION:
             (10**int(decimal_places))
         return number
 
-    def get_balances_xt(self, currency):  # Check số dư của 1 token trên sàn
+    def get_balances_bitrue(self, currency):  # Check số dư của 1 token trên sàn
         while True:
             try:
                 currency = currency.lower()
@@ -85,8 +85,8 @@ class xt_FUNCTION:
         return self.convert_number_to_smaller(float(balance))
 
     # Lấy danh sách các lệnh đang được đặt trên sàn
-    def get_depth_xt(self, symbol, usd, proxy, fake_ip):
-        url = f"https://sapi.xt.com/v4/public/depth"
+    def get_depth_bitrue(self, symbol, usd, proxy, fake_ip):
+        url = f"https://sapi.bitrue.com/v4/public/depth"
         params = { 
             'symbol': f"{symbol}_{usd}",
             'limit': '50'              
@@ -112,8 +112,8 @@ class xt_FUNCTION:
             return 0
 
     # Kiểm tra nếu dùng 1 số usd thì mua được bao nhiêu đồng coin
-    def get_return_buy_xt(self, symbol, usd, amountin, proxy, fake_ip):
-        result = self.get_depth_xt(symbol, usd, proxy, fake_ip)['result']
+    def get_return_buy_bitrue(self, symbol, usd, amountin, proxy, fake_ip):
+        result = self.get_depth_bitrue(symbol, usd, proxy, fake_ip)['result']
         # print("result: ", result['result']['timestamp'])
         # print("result: ", result['timestamp'])
         try:
@@ -141,8 +141,8 @@ class xt_FUNCTION:
             return (total_volume)*(100-0.26)/100
 
     # Kiểm tra nếu dùng 1 số coin thì bán ra được bao nhiêu đồng usd
-    def get_return_sell_xt(self, symbol, usd, amountin, proxy, fake_ip):
-        result = self.get_depth_xt(symbol, usd, proxy, fake_ip)['result']
+    def get_return_sell_bitrue(self, symbol, usd, amountin, proxy, fake_ip):
+        result = self.get_depth_bitrue(symbol, usd, proxy, fake_ip)['result']
         try:
             list_bids = result['bids']
         except:
@@ -168,8 +168,8 @@ class xt_FUNCTION:
             return float(sum_value_bids)*(100-0.26)/100
 
     # Tìm giá khớp lệnh cuối cùng, và lượng token có thể nhận được khi mua
-    def find_quantity_price_buy_xt(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
-        result = self.get_depth_xt(symbol, token_usd, proxy, fake_ip)['result']
+    def find_quantity_price_buy_bitrue(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
+        result = self.get_depth_bitrue(symbol, token_usd, proxy, fake_ip)['result']
         # print(result)
         try:
             list_asks = result['asks']
@@ -198,21 +198,21 @@ class xt_FUNCTION:
                 # return price_find, total_return*(100-0.1)/100
                 return price_find, total_return
         if float(price_find) > price_start*(1+float(truotgiasan)/100):
-            print("SOS xt -buy " + str(symbol) +
+            print("SOS bitrue -buy " + str(symbol) +
                   str(price_find)+" " + str(price_start))
             return 0, 0
-        print("price OK xt price_start" +
+        print("price OK bitrue price_start" +
               str(price_start) + "price_find " + (price_find))
 
         if float(sum_value_ask) < float(amountin):
-            # 0.1 là phí giao dịch của xt
+            # 0.1 là phí giao dịch của bitrue
             return price_find, total_volume*(100-0.26)/100
 
     # lệnh buy cần tính chuẩn với khối lượng 1000 usdt mua
     # Hàm mua theo limit
-    def real_buy_in_xt(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
+    def real_buy_in_bitrue(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
         symbol = token_name + "_" + token_usd
-        price, quantity = self.find_quantity_price_buy_xt(symbol=token_name, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
+        price, quantity = self.find_quantity_price_buy_bitrue(symbol=token_name, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
         if "e" in str(price):
             price = f'{price:.10f}'
         else:
@@ -223,7 +223,7 @@ class xt_FUNCTION:
             print("Do truot gia cua san qua cao")
             return "Do truot gia cua san qua cao"
         if quantity < amoutoutmin:
-            print("real_buy_in_xt quantity" + str(quantity) +
+            print("real_buy_in_bitrue quantity" + str(quantity) +
                   " < amoutoutmin" + str(amoutoutmin))
             return "Bé hơn amoutoutmin rồi!!!"
         if "e" in str(price):
@@ -286,10 +286,10 @@ class xt_FUNCTION:
         return result
 
     # Hàm bán token theo limit
-    def real_sell_in_xt(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
+    def real_sell_in_bitrue(self, token_name, token_usd, amounin, amoutoutmin, proxy, fake_ip, truotgiasan):
         symbol = token_name + '_' + token_usd
 
-        price, quantity = self.find_quantity_price_sell_xt(
+        price, quantity = self.find_quantity_price_sell_bitrue(
             symbol=token_name, amountin=amounin, token_usd=token_usd, proxy=proxy, fake_ip=fake_ip, truotgiasan=truotgiasan)
         if "e" in str(price):
             price = f'{price:.20f}'
@@ -301,7 +301,7 @@ class xt_FUNCTION:
             print("Do truot gia cua san qua cao")
             return "Do truot gia cua san qua cao"
         if quantity < amoutoutmin:
-            print("real_sell_in_xt quantity" + str(quantity) +
+            print("real_sell_in_bitrue quantity" + str(quantity) +
                   " < amoutoutmin" + str(amoutoutmin))
             return "Bé hơn amoutoutmin rồi!!!"
 
@@ -353,9 +353,9 @@ class xt_FUNCTION:
         return result
 
     # Tìm giá khơp lệnh cuối cùng và số tiền nhận được khi bán token
-    def find_quantity_price_sell_xt(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
-        result = self.get_depth_xt(symbol, token_usd, proxy, fake_ip)['result']
-        # print(f"get_depth_xt {result}")
+    def find_quantity_price_sell_bitrue(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
+        result = self.get_depth_bitrue(symbol, token_usd, proxy, fake_ip)['result']
+        # print(f"get_depth_bitrue {result}")
         try:
             list_bids = result['bids']
         except:
@@ -385,7 +385,7 @@ class xt_FUNCTION:
         if float(price_find) < price_start/(1+float(truotgiasan)/100):
             print("SOS " + str(price_find)+" " + str(price_start))
             return 10000000, 0
-        print("price OK xt" + str(price_start) +
+        print("price OK bitrue" + str(price_start) +
               "price_find " + (price_find))
 
         if float(total_volume) < float(amountin):
@@ -407,8 +407,8 @@ class xt_FUNCTION:
                 print("................")
         return list_chain
 
-    # Lấy địa chỉ nạp tiền lên xt
-    def get_deposit_address_xt(self, currency, chain):
+    # Lấy địa chỉ nạp tiền lên bitrue
+    def get_deposit_address_bitrue(self, currency, chain):
         currency = currency.upper()
         if chain == "Polygon":
             chainID = "Polygon"
@@ -452,7 +452,7 @@ class xt_FUNCTION:
         #     return ["No address avaiable"]
 
     # Lấy trạng thái khả dụng hay bị dừng nạp tiền của 1 token
-    def get_status_deposit_xt(self, currency, chain):
+    def get_status_deposit_bitrue(self, currency, chain):
         currency = currency.lower()
         if chain == "Polygon":
             chainID = "Polygon"
@@ -491,7 +491,7 @@ class xt_FUNCTION:
         #     print(f"lỗi request {e}")
 
     # Lấy trạng thái khả dụng hay bị dừng rút tiền
-    def get_status_withdrawal_xt(self, currency, chain):
+    def get_status_withdrawal_bitrue(self, currency, chain):
         currency = currency.lower()
         if chain == "Polygon":
             chainID = "Polygon"
@@ -531,7 +531,7 @@ class xt_FUNCTION:
             print(f"lỗi request {e}")
 
     # Lấy lịch sử nạp tiền
-    def get_deposit_history_xt(self, currency):
+    def get_deposit_history_bitrue(self, currency):
         res = self.FundingAPI.get_deposit_withdrawal_history()
         currency = currency.lower()
         print("res: ", res)
@@ -541,10 +541,10 @@ class xt_FUNCTION:
                     status = item['status']
                     print(f"Deposit {item['amount']} {currency}, ID: {item['id']}, TransactionID: {item['transactionId']}, status: {status}")
         else:   
-            print("Lỗi get status deposit xt")
-            return "Lỗi get status deposit xt"
+            print("Lỗi get status deposit bitrue")
+            return "Lỗi get status deposit bitrue"
 
-    def get_withdraw_history_xt(self, currency):  # Lấy lịch sử rút tiền
+    def get_withdraw_history_bitrue(self, currency):  # Lấy lịch sử rút tiền
         currency = currency.lower()
         res = self.FundingAPI.get_withdrawal_history()
         print("res", res)
@@ -554,12 +554,12 @@ class xt_FUNCTION:
                     status = item['status']
                     print(f"Withdraw {item['amount']} {currency}, ID: {item['id']}, TransactionID: {item['transactionId']}, status: {status}")
         else:
-            print("Lỗi get status deposit xt")
-            return "Lỗi get status deposit xt"
+            print("Lỗi get status deposit bitrue")
+            return "Lỗi get status deposit bitrue"
 
-    # Hàm rút tiền từ xt về  ví metamask
-    def submit_token_withdrawal_xt(self, currency, chainID, amount, destinationAddress):
-        balance = self.get_balances_xt(currency)
+    # Hàm rút tiền từ bitrue về  ví metamask
+    def submit_token_withdrawal_bitrue(self, currency, chainID, amount, destinationAddress):
+        balance = self.get_balances_bitrue(currency)
         print("balance: ", balance)
         status = ''
         currencyBinding = ''
@@ -573,7 +573,7 @@ class xt_FUNCTION:
             try:
                 print("size: ", amount)
                 res = self.FundingAPI.coin_withdraw(currency, chainID, amount, destinationAddress)
-                print("submit_token_withdrawal_xt ", res)
+                print("submit_token_withdrawal_bitrue ", res)
                 if res['result']['id']:
                     withdrawal_ID = res['result']['id']
                     print("withdrawal_ID", withdrawal_ID)
@@ -586,7 +586,7 @@ class xt_FUNCTION:
                     return False, status, 0
             except:
                 err = str(sys.exc_info())
-                print("Lỗi submit_token_withdrawal_xt ", err)
+                print("Lỗi submit_token_withdrawal_bitrue ", err)
                 status = err
                 return 'False1', status, 0
         else:
@@ -594,14 +594,14 @@ class xt_FUNCTION:
             status = "Không đủ tiền rút rồi!!!"
             return False, status, 0
 
-    def transfer_xt(self, bizId, source, to, currency, symbol, amount):  # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
+    def transfer_bitrue(self, bizId, source, to, currency, symbol, amount):  # Chuyển tiền tron nội bộ sàn ( Có nhiều sàn ko cần chức năng này)
         try:
             currency = currency.lower()
             res=  self.FundingAPI.funds_transfer(bizId, source, to, currency, symbol, amount)# 18:trading, 6: funding
             print("res: ", res)
         except:
-            print("Lỗi transfer main to trading_xt ", str(sys.exc_info()))
-            return "Lỗi transfer main to trading_xt " + str(sys.exc_info())
+            print("Lỗi transfer main to trading_bitrue ", str(sys.exc_info()))
+            return "Lỗi transfer main to trading_bitrue " + str(sys.exc_info())
         if res['mc'] == 'SUCCESS':
             print("chuyển tiền thành công")
             status="chuyển tiền thành công"
@@ -611,31 +611,31 @@ class xt_FUNCTION:
         return status
 
 
-toolxt = xt_FUNCTION(keypass='')
+toolbitrue = bitrue_FUNCTION(keypass='')
 
-# print(toolxt.get_depth_xt("btc", "usdt", "", "")) #done
-print(toolxt.get_return_buy_xt(symbol="etc", usd="usdt", amountin=1, proxy="", fake_ip=False)) #done
+# print(toolbitrue.get_depth_bitrue("btc", "usdt", "", "")) #done
+print(toolbitrue.get_return_buy_bitrue(symbol="etc", usd="usdt", amountin=1, proxy="", fake_ip=False)) #done
 
-# print(toolxt.get_return_sell_xt(symbol="btc", usd="usdt", amountin=1, proxy="", fake_ip=False)) #done
+# print(toolbitrue.get_return_sell_bitrue(symbol="btc", usd="usdt", amountin=1, proxy="", fake_ip=False)) #done
 
-# print(toolxt.find_quantity_price_buy_xt("vsys", 3, "usdt", "", "", 0.1)) #done
-# print(toolxt.find_quantity_price_sell_xt("btc", 1, "usdt", "", "", 0.1)) #done
+# print(toolbitrue.find_quantity_price_buy_bitrue("vsys", 3, "usdt", "", "", 0.1)) #done
+# print(toolbitrue.find_quantity_price_sell_bitrue("btc", 1, "usdt", "", "", 0.1)) #done
 
-# print(toolxt.real_buy_in_xt("ada", "usdt", 2, 0, "", "", 0.1)) #done
-# print(toolxt.real_sell_in_xt("ada", "usdt", 5.34, 0, "", False, 5)) #done
+# print(toolbitrue.real_buy_in_bitrue("ada", "usdt", 2, 0, "", "", 0.1)) #done
+# print(toolbitrue.real_sell_in_bitrue("ada", "usdt", 5.34, 0, "", False, 5)) #done
 
-# print(toolxt.get_deposit_address_xt("USDT", "SOL")) #done
+# print(toolbitrue.get_deposit_address_bitrue("USDT", "SOL")) #done
 
-# print(toolxt.get_status_deposit_xt("usdt", "ETH")) #done 
-# print(toolxt.get_status_withdrawal_xt("usdt", "ETH")) # done
+# print(toolbitrue.get_status_deposit_bitrue("usdt", "ETH")) #done 
+# print(toolbitrue.get_status_withdrawal_bitrue("usdt", "ETH")) # done
 
-# print(toolxt.get_deposit_history_xt("USDT"))  # done
-# print(toolxt.get_withdraw_history_xt("usdt"))  # done
-# print(toolxt.get_balances_xt("usdt")) #done
+# print(toolbitrue.get_deposit_history_bitrue("USDT"))  # done
+# print(toolbitrue.get_withdraw_history_bitrue("usdt"))  # done
+# print(toolbitrue.get_balances_bitrue("usdt")) #done
 
-# print(toolxt.submit_token_withdrawal_xt("usdt", "Polygon" , 10, "0x09a1e5cE84299aA2378b861F56467708F70640AB")) # done
-# print(toolxt.submit_token_withdrawal_xt("USDT", 2.5, "USDT_ARB")) # no
+# print(toolbitrue.submit_token_withdrawal_bitrue("usdt", "Polygon" , 10, "0x09a1e5cE84299aA2378b861F56467708F70640AB")) # done
+# print(toolbitrue.submit_token_withdrawal_bitrue("USDT", 2.5, "USDT_ARB")) # no
 
-# Nếu chuyển từ spot sang future thì phải thêm symbol, example: xt_usdt
-# toolxt.transfer_xt("1233423423dcsdfeadeadeqasdsdfasdsewaddfddceceqcw", "SPOT", "LEVER", "usdt", "xt_usdt", 3) done
-# toolxt.transfer_xt("1233423423dcsdfeadeadedssfasdsewaddfddceceqcw", "FINANCE", "SPOT", "usdt", "", 3) done
+# Nếu chuyển từ spot sang future thì phải thêm symbol, example: bitrue_usdt
+# toolbitrue.transfer_bitrue("1233423423dcsdfeadeadeqasdsdfasdsewaddfddceceqcw", "SPOT", "LEVER", "usdt", "bitrue_usdt", 3) done
+# toolbitrue.transfer_bitrue("1233423423dcsdfeadeadedssfasdsewaddfddceceqcw", "FINANCE", "SPOT", "usdt", "", 3) done
