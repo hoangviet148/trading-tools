@@ -24,31 +24,40 @@ class Client(object):
 
     def _request(self, method, request_path, params):
 
+        timestamp = utils.get_timestamp()
+        sign = utils.sign(method, request_path, params, self.SECRET_KEY, self.API_KEY)
+        
+        params["signature"] = sign
+ 
         print(f"request_path {request_path} params {params}")
 
         if method == c.GET or method == c.DELETE:
             url = c.API_URL + request_path + utils.parse_params_to_str(params)
         else:
-            url = c.API_URL + request_path
+            url = c.API_URL + request_path + utils.parse_params_to_str(params)
 
-        timestamp = utils.get_timestamp()
+        
         body = json.dumps(params)
 
-        sign = utils.sign(method, request_path, params, self.SECRET_KEY, self.API_KEY)
+        
         header = utils.get_header(self.API_KEY, sign, timestamp)
 
         # send request
         response = None
+        print("sign: ", sign)
         print("url:", url)
-        print("headers:", header)
+        print("header:", header)
         print("body:", body)
+        # params = {
+        #     "signature": sign
+        # }
 
         if method == c.GET:
             response = requests.get(url, headers=header)
             # print(f"response get === {response.json()} - {response.status_code}")
         elif method == c.POST:
             try:
-                response = requests.post(url, headers=header, data=body)
+                response = requests.post(url, headers=header, params=params)
                 print(f"response post === {response.json()} - {response.status_code}")
             except Exception as e:
                 print(f"Exception {e}")

@@ -34,8 +34,8 @@ class bitrue_FUNCTION:
         if keypass != None:
 
             # NHẬP KEY, SECRET của API
-            self.api_key = '1b63b469-30ed-4d17-9436-43e3d6dec6ce'
-            self.api_secret = 'e9afbc48bdf5e7158c1270c9e804131f1a77d6ab'
+            self.api_key = '2098a806ce5de9b3e42af2e4a0a7a6cd3c9ac641cc491a21233ece9e0bfae394'
+            self.api_secret = '18e8a4b513c86d843b2b77e12b03deba69f3c189d31fdba9ccab990175fa4b62'
 
             self.FundingAPI = Funding.FundingAPI(
                 self.api_key, self.api_secret)
@@ -86,10 +86,9 @@ class bitrue_FUNCTION:
 
     # Lấy danh sách các lệnh đang được đặt trên sàn
     def get_depth_bitrue(self, symbol, usd, proxy, fake_ip):
-        url = f"https://sapi.bitrue.com/v4/public/depth"
+        url = f"https://www.bitrue.com/api/v1/depth"
         params = { 
-            'symbol': f"{symbol}_{usd}",
-            'limit': '50'              
+            'symbol': f"{symbol}{usd}"
         }
         try:
             if fake_ip == True:
@@ -101,11 +100,10 @@ class bitrue_FUNCTION:
                 
             else:
                 res = requests.get(url, params=params, timeout=5)
-
+                
             if res.status_code != 200:
                 return 0
             else:
-                # print(res.json())
                 return res.json()
         except Exception as e:
             print("Exception: ", e)
@@ -113,8 +111,7 @@ class bitrue_FUNCTION:
 
     # Kiểm tra nếu dùng 1 số usd thì mua được bao nhiêu đồng coin
     def get_return_buy_bitrue(self, symbol, usd, amountin, proxy, fake_ip):
-        result = self.get_depth_bitrue(symbol, usd, proxy, fake_ip)['result']
-        # print("result: ", result['result']['timestamp'])
+        result = self.get_depth_bitrue(symbol, usd, proxy, fake_ip)
         # print("result: ", result['timestamp'])
         try:
             list_asks = result['asks']
@@ -142,7 +139,7 @@ class bitrue_FUNCTION:
 
     # Kiểm tra nếu dùng 1 số coin thì bán ra được bao nhiêu đồng usd
     def get_return_sell_bitrue(self, symbol, usd, amountin, proxy, fake_ip):
-        result = self.get_depth_bitrue(symbol, usd, proxy, fake_ip)['result']
+        result = self.get_depth_bitrue(symbol, usd, proxy, fake_ip)
         try:
             list_bids = result['bids']
         except:
@@ -169,8 +166,7 @@ class bitrue_FUNCTION:
 
     # Tìm giá khớp lệnh cuối cùng, và lượng token có thể nhận được khi mua
     def find_quantity_price_buy_bitrue(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
-        result = self.get_depth_bitrue(symbol, token_usd, proxy, fake_ip)['result']
-        # print(result)
+        result = self.get_depth_bitrue(symbol, token_usd, proxy, fake_ip)
         try:
             list_asks = result['asks']
         except:
@@ -234,7 +230,7 @@ class bitrue_FUNCTION:
         Klin = int(quantity*10**1)/(10**1)
         result = None
         try:
-            result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="BUY", quantity=Klin, type_="LIMIT", condition="IOC")
+            result = self.TradeAPI.place_order(baseCurrency=token_name, quoteCurrency=token_usd, price=price, side="BUY", quantity=Klin, type_="LIMIT", condition="GTC")
             print("result: ", result)
             # print("result: ", result.status_code)
             print("=== result ===", result) 
@@ -354,7 +350,7 @@ class bitrue_FUNCTION:
 
     # Tìm giá khơp lệnh cuối cùng và số tiền nhận được khi bán token
     def find_quantity_price_sell_bitrue(self, symbol, amountin, token_usd, proxy, fake_ip, truotgiasan):
-        result = self.get_depth_bitrue(symbol, token_usd, proxy, fake_ip)['result']
+        result = self.get_depth_bitrue(symbol, token_usd, proxy, fake_ip)
         # print(f"get_depth_bitrue {result}")
         try:
             list_bids = result['bids']
@@ -613,29 +609,30 @@ class bitrue_FUNCTION:
 
 toolbitrue = bitrue_FUNCTION(keypass='')
 
-# print(toolbitrue.get_depth_bitrue("btc", "usdt", "", "")) #done
-print(toolbitrue.get_return_buy_bitrue(symbol="etc", usd="usdt", amountin=1, proxy="", fake_ip=False)) #done
+# print(toolbitrue.get_depth_bitrue("btc", "usdt", "", ""))  done
 
-# print(toolbitrue.get_return_sell_bitrue(symbol="btc", usd="usdt", amountin=1, proxy="", fake_ip=False)) #done
+# print(toolbitrue.get_return_buy_bitrue(symbol="etc", usd="usdt", amountin=1, proxy="", fake_ip=False)) done
 
-# print(toolbitrue.find_quantity_price_buy_bitrue("vsys", 3, "usdt", "", "", 0.1)) #done
-# print(toolbitrue.find_quantity_price_sell_bitrue("btc", 1, "usdt", "", "", 0.1)) #done
+# print(toolbitrue.get_return_sell_bitrue(symbol="btc", usd="usdt", amountin=1, proxy="", fake_ip=False)) done
 
-# print(toolbitrue.real_buy_in_bitrue("ada", "usdt", 2, 0, "", "", 0.1)) #done
-# print(toolbitrue.real_sell_in_bitrue("ada", "usdt", 5.34, 0, "", False, 5)) #done
+# print(toolbitrue.find_quantity_price_buy_bitrue("eth", 3, "usdt", "", "", 0.1)) done
+# print(toolbitrue.find_quantity_price_sell_bitrue("btc", 1, "usdt", "", "", 0.1)) done
 
-# print(toolbitrue.get_deposit_address_bitrue("USDT", "SOL")) #done
+print(toolbitrue.real_buy_in_bitrue("ADA", "USDT", 2, 0, "", "", 0.1))
+# print(toolbitrue.real_sell_in_bitrue("ada", "usdt", 5.34, 0, "", False, 5)) 
 
-# print(toolbitrue.get_status_deposit_bitrue("usdt", "ETH")) #done 
-# print(toolbitrue.get_status_withdrawal_bitrue("usdt", "ETH")) # done
+# print(toolbitrue.get_deposit_address_bitrue("USDT", "SOL")) 
 
-# print(toolbitrue.get_deposit_history_bitrue("USDT"))  # done
-# print(toolbitrue.get_withdraw_history_bitrue("usdt"))  # done
-# print(toolbitrue.get_balances_bitrue("usdt")) #done
+# print(toolbitrue.get_status_deposit_bitrue("usdt", "ETH")) 
+# print(toolbitrue.get_status_withdrawal_bitrue("usdt", "ETH")) 
 
-# print(toolbitrue.submit_token_withdrawal_bitrue("usdt", "Polygon" , 10, "0x09a1e5cE84299aA2378b861F56467708F70640AB")) # done
+# print(toolbitrue.get_deposit_history_bitrue("USDT")) 
+# print(toolbitrue.get_withdraw_history_bitrue("usdt"))  
+# print(toolbitrue.get_balances_bitrue("usdt"))
+
+# print(toolbitrue.submit_token_withdrawal_bitrue("usdt", "Polygon" , 10, "0x09a1e5cE84299aA2378b861F56467708F70640AB")) 
 # print(toolbitrue.submit_token_withdrawal_bitrue("USDT", 2.5, "USDT_ARB")) # no
 
 # Nếu chuyển từ spot sang future thì phải thêm symbol, example: bitrue_usdt
-# toolbitrue.transfer_bitrue("1233423423dcsdfeadeadeqasdsdfasdsewaddfddceceqcw", "SPOT", "LEVER", "usdt", "bitrue_usdt", 3) done
-# toolbitrue.transfer_bitrue("1233423423dcsdfeadeadedssfasdsewaddfddceceqcw", "FINANCE", "SPOT", "usdt", "", 3) done
+# toolbitrue.transfer_bitrue("1233423423dcsdfeadeadeqasdsdfasdsewaddfddceceqcw", "SPOT", "LEVER", "usdt", "bitrue_usdt", 3) 
+# toolbitrue.transfer_bitrue("1233423423dcsdfeadeadedssfasdsewaddfddceceqcw", "FINANCE", "SPOT", "usdt", "", 3) 

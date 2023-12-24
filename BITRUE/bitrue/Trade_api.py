@@ -1,6 +1,7 @@
 from .client import Client
 from .consts import *
 import time
+from . import consts as c, utils, exceptions
 
 
 class TradeAPI(Client):
@@ -10,14 +11,16 @@ class TradeAPI(Client):
 
     # Place Order
     def place_order(self, side, baseCurrency, quoteCurrency, price, quantity, type_, condition):
+        timestamp = utils.get_timestamp()
         params = {
+            "symbol": f"{baseCurrency}{quoteCurrency}", # token muon mua
             "side": side,  # mua hay ban
-            "symbol": f"{baseCurrency}_{quoteCurrency}", # token muon mua
-            "price": price, # gia
-            "quantity": quantity,  #so luong
             "type": type_, # type limit 
             "timeInForce": condition,  # IOC
-            "bizType": "SPOT"
+            "quantity": quantity,  #so luong
+            "price": price, # gia
+            "recvWindow": 5000,
+            "timestamp": timestamp
         }
 
         return self._request_with_params(POST, PLACE_ORDER, params)
