@@ -1,5 +1,5 @@
 # http header
-API_URL = 'https://fapi.bitrue.com'
+API_URL = 'https://openapi.bitrue.com'
 
 CONTENT_TYPE = 'Content-Type'
 ACCESS_KEY = 'validate-appkey'
@@ -80,7 +80,7 @@ INTEREST_RATE_LOAN_QUATA = '/api/v5/public/interest-rate-loan-quota'
 VIP_INTEREST_RATE_LOAN_QUATA = '/api/v5/public/vip-interest-rate-loan-quota'
 
 # TRADE
-PLACE_ORDER = '/fapi/v2/order'
+PLACE_ORDER = '/api/v1/order'
 BATCH_ORDERS = '/api/v5/trade/batch-orders'
 CANCEL_ORDER = '/v4/order'
 CANAEL_BATCH_ORDERS = '/api/v5/trade/cancel-batch-orders'

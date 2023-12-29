@@ -13,16 +13,16 @@ class TradeAPI(Client):
     def place_order(self, side, baseCurrency, quoteCurrency, price, quantity, type_, condition):
         baseCurrency = baseCurrency.upper()
         quoteCurrency = quoteCurrency.upper()
+        timestamp = str(int(time.time() * 1000))
         params = {
-            "contractName": f"E-{baseCurrency}-{quoteCurrency}", # token muon mua
+            "symbol": f"{baseCurrency}{quoteCurrency}", # token muon mua
             "side": side,  # mua hay ban
             "type": type_, # type limit 
-            "positionType": 1,
-            "open": "OPEN",
-            "volume": 20,  #so luong,
-            # "amount": 10,
-            "price": 0.6, # gia
-            'leverage': 5
+            "timeInForce": "GTC",
+            "quantity": quantity,
+            "price": price, # gia
+            "recvWindow": 5000,
+            "timestamp": timestamp
         }
 
      
