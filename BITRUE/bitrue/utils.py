@@ -18,9 +18,9 @@ def sign(method, path, query_data, secret_key, api_key):
     body_data = ""
     concatenated_data = ""
 
-    # query_string = "{" + ",".join([f"\"{key}\":\"{value}\"" for key, value in query_data.items()]) + "}"
-    # query_string = query_string.replace('"', '\\"')
-    query_string = '&'.join([f"{key}={quote(str(query_data[key]))}" for key in (query_data.keys())])
+    query_string = "{" + ",".join([f"\"{key}\":\"{value}\"" for key, value in query_data.items()]) + "}"
+    query_string = query_string.replace('"', '\\"')
+    # query_string = '&'.join([f"{key}={quote(str(query_data[key]))}" for key in (query_data.keys())])
     print("query_string: ", query_string)
 
     # timestamp = str(int(time.time() * 1000))

@@ -31,9 +31,8 @@ class Client(object):
 
         if method == c.GET or method == c.DELETE:
             url = c.API_URL + request_path + utils.parse_params_to_str(params)
-        elif request_path == "/api/v1/order":
-            params["signature"] = sign
-            url = c.API_URL + request_path + utils.parse_params_to_str(params)
+        elif request_path == "/api/v1/order":        
+            url = c.API_URL + request_path + f"?signature={sign}"
 
         
         body = json.dumps(params)
@@ -56,7 +55,7 @@ class Client(object):
             # print(f"response get === {response.json()} - {response.status_code}")
         elif method == c.POST:
             try:
-                response = requests.post(url, headers=header)
+                response = requests.post(url, headers=header, data=body)
                 print(f"response post === {response.json()} - {response.status_code}")
             except Exception as e:
                 print(f"Exception {e}")

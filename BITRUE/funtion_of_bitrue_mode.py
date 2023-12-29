@@ -620,7 +620,7 @@ toolbitrue = bitrue_FUNCTION(keypass='')
 # print(toolbitrue.find_quantity_price_buy_bitrue("eth", 3, "usdt", "", "", 0.1)) done
 # print(toolbitrue.find_quantity_price_sell_bitrue("btc", 1, "usdt", "", "", 0.1)) done
 
-print(toolbitrue.real_buy_in_bitrue("ADA", "USDT", 7, 0, "", "", 0.1))
+print(toolbitrue.real_buy_in_bitrue("ada", "usdt", 7, 0, "", "", 0.1))
 # print(toolbitrue.real_sell_in_bitrue("ada", "usdt", 5.34, 0, "", False, 5)) 
 
 # print(toolbitrue.get_deposit_address_bitrue("USDT", "SOL")) 

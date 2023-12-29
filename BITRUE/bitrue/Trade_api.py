@@ -13,7 +13,7 @@ class TradeAPI(Client):
     def place_order(self, side, baseCurrency, quoteCurrency, price, quantity, type_, condition):
         baseCurrency = baseCurrency.upper()
         quoteCurrency = quoteCurrency.upper()
-        timestamp = str(int(time.time() * 1000))
+        timestamp = (int(time.time() * 1000))
         params = {
             "symbol": f"{baseCurrency}{quoteCurrency}", # token muon mua
             "side": side,  # mua hay ban
@@ -21,8 +21,8 @@ class TradeAPI(Client):
             "timeInForce": "GTC",
             "quantity": quantity,
             "price": price, # gia
-            "recvWindow": 5000,
-            "timestamp": timestamp
+            "timestamp": timestamp,
+            "recvWindow": 5000   
         }
 
      
