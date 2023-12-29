@@ -11,17 +11,21 @@ class TradeAPI(Client):
 
     # Place Order
     def place_order(self, side, baseCurrency, quoteCurrency, price, quantity, type_, condition):
-        timestamp = utils.get_timestamp()
+        baseCurrency = baseCurrency.upper()
+        quoteCurrency = quoteCurrency.upper()
         params = {
-            "symbol": f"{baseCurrency}{quoteCurrency}", # token muon mua
+            "contractName": f"E-{baseCurrency}-{quoteCurrency}", # token muon mua
             "side": side,  # mua hay ban
             "type": type_, # type limit 
-            "timeInForce": condition,  # IOC
-            "quantity": quantity,  #so luong
-            "price": price, # gia
-            "recvWindow": 5000,
-            "timestamp": timestamp
+            "positionType": 1,
+            "open": "OPEN",
+            "volume": 20,  #so luong,
+            # "amount": 10,
+            "price": 0.6, # gia
+            'leverage': 5
         }
+
+     
 
         return self._request_with_params(POST, PLACE_ORDER, params)
 

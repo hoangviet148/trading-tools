@@ -86,9 +86,11 @@ class bitrue_FUNCTION:
 
     # Lấy danh sách các lệnh đang được đặt trên sàn
     def get_depth_bitrue(self, symbol, usd, proxy, fake_ip):
-        url = f"https://www.bitrue.com/api/v1/depth"
+        url = f"https://fapi.bitrue.com/fapi/v1/depth"
+        symbol = symbol.upper()
+        usd = usd.upper()
         params = { 
-            'symbol': f"{symbol}{usd}"
+            'contractName': f"E-{symbol}-{usd}"
         }
         try:
             if fake_ip == True:
@@ -609,7 +611,7 @@ class bitrue_FUNCTION:
 
 toolbitrue = bitrue_FUNCTION(keypass='')
 
-# print(toolbitrue.get_depth_bitrue("btc", "usdt", "", ""))  done
+# print(toolbitrue.get_depth_bitrue("btc", "usdt", "", "")) done
 
 # print(toolbitrue.get_return_buy_bitrue(symbol="etc", usd="usdt", amountin=1, proxy="", fake_ip=False)) done
 
@@ -618,7 +620,7 @@ toolbitrue = bitrue_FUNCTION(keypass='')
 # print(toolbitrue.find_quantity_price_buy_bitrue("eth", 3, "usdt", "", "", 0.1)) done
 # print(toolbitrue.find_quantity_price_sell_bitrue("btc", 1, "usdt", "", "", 0.1)) done
 
-print(toolbitrue.real_buy_in_bitrue("ADA", "USDT", 2, 0, "", "", 0.1))
+print(toolbitrue.real_buy_in_bitrue("ADA", "USDT", 7, 0, "", "", 0.1))
 # print(toolbitrue.real_sell_in_bitrue("ada", "usdt", 5.34, 0, "", False, 5)) 
 
 # print(toolbitrue.get_deposit_address_bitrue("USDT", "SOL")) 

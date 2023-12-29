@@ -18,7 +18,9 @@ def sign(method, path, query_data, secret_key, api_key):
     body_data = ""
     concatenated_data = ""
 
-    query_string = '&'.join([f"{key}={quote(str(query_data[key]))}" for key in (query_data.keys())])
+    query_string = "{" + ",".join([f"\"{key}\":\"{value}\"" for key, value in query_data.items()]) + "}"
+    query_string = query_string.replace('"', '\\"')
+    # query_string = '&'.join([f"{key}={quote(str(query_data[key]))}" for key in (query_data.keys())])
     print("query_string: ", query_string)
 
     timestamp = str(int(time.time() * 1000))
@@ -27,7 +29,7 @@ def sign(method, path, query_data, secret_key, api_key):
     #     'validate-timestamp': timestamp
     # }
     # header_string = '&'.join([f"{key}={quote(str(headers[key]))}" for key in (headers.keys())])
-    original_data = f"{query_string}"
+    original_data = f"{timestamp}{method}{path}{query_string}"
     print("original_data: ", original_data)
 
     secret_key = "18e8a4b513c86d843b2b77e12b03deba69f3c189d31fdba9ccab990175fa4b62"
@@ -54,7 +56,10 @@ def pre_hash(timestamp, method, request_path, body):
 
 def get_header(api_key, sign, timestamp):
     header = dict()
-    header["X-MBX-APIKEY"] = api_key
+    header["X-CH-APIKEY"] = api_key
+    header["X-CH-SIGN"] = sign
+    header["X-CH-TS"] = timestamp
+    header["Content-Type"] = "application/json"
     return header
 
 def parse_params_to_str(params):
